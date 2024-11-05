@@ -1,15 +1,15 @@
 {
-  "name": "devcontainer-validator",
+  "name": "validate-devcontainer",
   "description": "Validate Dev Container Configuration",
   "version": "0.0.0",
   "author": "Chris Reddington",
-  "homepage": "https://github.com/chrisreddington/devcontainer-validator",
+  "homepage": "https://github.com/chrisreddington/validate-devcontainer",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chrisreddington/devcontainer-validator.git"
+    "url": "git+https://github.com/chrisreddington/validate-devcontainer.git"
   },
   "bugs": {
-    "url": "https://github.com/chrisreddington/devcontainer-validator/issues"
+    "url": "https://github.com/chrisreddington/validate-devcontainer/issues"
   },
   "keywords": [
     "actions",

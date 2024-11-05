@@ -65,7 +65,7 @@ const mockDevcontainer: DevcontainerContent = {
   }
 }
 
-describe('devcontainer-validator', () => {
+describe('validate-devcontainer', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })

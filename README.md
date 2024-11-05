@@ -1,7 +1,7 @@
 # Dev Container Validator
 
-[![GitHub Super-Linter](https://github.com/chrisreddington/devcontainer-validator/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/chrisreddington/devcontainer-validator/actions/workflows/ci.yml/badge.svg)
+[![GitHub Super-Linter](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
+![CI](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/ci.yml/badge.svg)
 
 A GitHub Action to validate Dev Container configuration. This action checks
 required Visual Studio Code extensions and optionally validates task
@@ -22,7 +22,7 @@ Steps:
   - uses: actions/checkout@v4
 
   - name: Validate Dev Container
-    uses: chrisreddington/devcontainer-validator@v1
+    uses: chrisreddington/validate-devcontainer@v1
     with:
       # Required Visual Studio Code extensions (comma-separated)
       extensions-list: 'GitHub.codespaces,GitHub.vscode-github-actions'
