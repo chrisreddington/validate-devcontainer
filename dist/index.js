@@ -3428,86 +3428,134 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 936:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ 730:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
-const core = __nccwpck_require__(484)
-const fs = __nccwpck_require__(896)
+"use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = run;
+exports.validateExtensions = validateExtensions;
+exports.validateTasks = validateTasks;
+const core = __importStar(__nccwpck_require__(484));
+const fs = __importStar(__nccwpck_require__(896));
 function validateExtensions(devcontainerContent, requiredExtensions) {
-  const configuredExtensions =
-    devcontainerContent?.customizations?.vscode?.extensions || []
-  const missingExtensions = requiredExtensions.filter(
-    required =>
-      !configuredExtensions.some(
-        configured => configured.toLowerCase() === required.toLowerCase()
-      )
-  )
-  return missingExtensions
+    const configuredExtensions = devcontainerContent?.customizations?.vscode?.extensions || [];
+    const missingExtensions = requiredExtensions.filter(required => !configuredExtensions.some(configured => configured.toLowerCase() === required.toLowerCase()));
+    return missingExtensions;
 }
-
 function validateTasks(devcontainerContent) {
-  const tasks = devcontainerContent.tasks
-  if (!tasks) {
-    return "'tasks' property is missing"
-  }
-
-  const requiredTasks = ['build', 'test', 'run']
-  const missingTasks = requiredTasks.filter(
-    task => !tasks[task] || typeof tasks[task] !== 'string'
-  )
-
-  if (missingTasks.length > 0) {
-    return `Missing or invalid required tasks: ${missingTasks.join(', ')}`
-  }
-
-  return null
+    const tasks = devcontainerContent.tasks;
+    if (!tasks) {
+        return "'tasks' property is missing";
+    }
+    const requiredTasks = ['build', 'test', 'run'];
+    const missingTasks = requiredTasks.filter(task => !tasks[task] || typeof tasks[task] !== 'string');
+    if (missingTasks.length > 0) {
+        return `Missing or invalid required tasks: ${missingTasks.join(', ')}`;
+    }
+    return null;
 }
-
+// Add this type guard function before the run() function
+function isDevcontainerContent(obj) {
+    if (typeof obj !== 'object' || obj === null)
+        return false;
+    const candidate = obj;
+    if (candidate.customizations !== undefined) {
+        if (typeof candidate.customizations !== 'object' ||
+            !candidate.customizations.vscode?.extensions) {
+            return false;
+        }
+        if (!Array.isArray(candidate.customizations.vscode.extensions)) {
+            return false;
+        }
+    }
+    if (candidate.tasks !== undefined) {
+        if (typeof candidate.tasks !== 'object')
+            return false;
+        for (const [, value] of Object.entries(candidate.tasks)) {
+            if (typeof value !== 'string')
+                return false;
+        }
+    }
+    return true;
+}
 async function run() {
-  try {
-    const extensionsList = core.getInput('extensions-list', { required: true })
-    const devcontainerPath =
-      core.getInput('devcontainer-path', { required: false }) ||
-      '.devcontainer/devcontainer.json'
-    const shouldValidateTasks = core.getInput('validate-tasks') === 'true'
-
-    if (!fs.existsSync(devcontainerPath)) {
-      throw new Error(`devcontainer.json not found at ${devcontainerPath}`)
+    try {
+        const extensionsList = core.getInput('extensions-list', { required: true });
+        const devcontainerPath = core.getInput('devcontainer-path', { required: false }) ||
+            '.devcontainer/devcontainer.json';
+        const shouldValidateTasks = core.getInput('validate-tasks') === 'true';
+        try {
+            await fs.promises.access(devcontainerPath);
+        }
+        catch {
+            throw new Error(`devcontainer.json not found at ${devcontainerPath}`);
+        }
+        // Update the JSON parse section with explicit type assertion
+        const fileContent = await fs.promises.readFile(devcontainerPath, 'utf8');
+        let parsedContent;
+        try {
+            parsedContent = JSON.parse(fileContent);
+        }
+        catch (error) {
+            throw new Error(`Invalid JSON in devcontainer.json: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        // Strengthen type checking before using parsed content
+        if (!isDevcontainerContent(parsedContent)) {
+            throw new Error('Invalid devcontainer.json structure');
+        }
+        // Now parsedContent is safely typed as DevcontainerContent
+        const devcontainerContent = parsedContent;
+        const requiredExtensions = extensionsList.split(',').map(ext => ext.trim());
+        const missingExtensions = validateExtensions(devcontainerContent, requiredExtensions);
+        if (missingExtensions.length > 0) {
+            throw new Error(`Missing required extensions: ${missingExtensions.join(', ')}`);
+        }
+        if (shouldValidateTasks) {
+            const tasksError = validateTasks(devcontainerContent);
+            if (tasksError) {
+                throw new Error(tasksError);
+            }
+        }
+        core.info('All validations passed successfully');
     }
-
-    const devcontainerContent = JSON.parse(
-      fs.readFileSync(devcontainerPath, 'utf8')
-    )
-    const requiredExtensions = extensionsList.split(',').map(ext => ext.trim())
-    const missingExtensions = validateExtensions(
-      devcontainerContent,
-      requiredExtensions
-    )
-
-    if (missingExtensions.length > 0) {
-      throw new Error(
-        `Missing required extensions: ${missingExtensions.join(', ')}`
-      )
+    catch (error) {
+        let errorMessage;
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+        else if (typeof error === 'string') {
+            errorMessage = error;
+        }
+        else {
+            errorMessage = 'An unknown error occurred';
+        }
+        core.setFailed(errorMessage);
     }
-
-    if (shouldValidateTasks) {
-      const tasksError = validateTasks(devcontainerContent)
-      if (tasksError) {
-        throw new Error(tasksError)
-      }
-    }
-
-    core.info('All validations passed successfully')
-  } catch (error) {
-    core.setFailed(error.message)
-  }
-}
-
-module.exports = {
-  run,
-  validateExtensions,
-  validateTasks
 }
 
 
@@ -3664,12 +3712,17 @@ module.exports = require("util");
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-/**
- * The entrypoint for the action.
- */
-const { run } = __nccwpck_require__(936)
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+var exports = __webpack_exports__;
 
-run()
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const main_1 = __nccwpck_require__(730);
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
+(0, main_1.run)();
+
+})();
 
 module.exports = __webpack_exports__;
 /******/ })()
