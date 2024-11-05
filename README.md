@@ -4,12 +4,12 @@
 ![CI](https://github.com/chrisreddington/devcontainer-validator/actions/workflows/ci.yml/badge.svg)
 
 A GitHub Action to validate Dev Container configuration. This action checks
-required VS Code extensions and optionally validates task configuration in
+required Visual Studio Code extensions and optionally validates task configuration in
 devcontainer.json files.
 
 ## Features
 
-- Validates presence of required VS Code extensions in devcontainer.json
+- Validates presence of required Visual Studio Code extensions in devcontainer.json
 - Optional validation of common development tasks (build, test, run)
 - Customizable devcontainer.json path
 - Configurable extension requirements
@@ -23,7 +23,7 @@ Steps:
   - name: Validate Dev Container
     uses: chrisreddington/devcontainer-validator@v1
     with:
-      # Required VS Code extensions (comma-separated)
+      # Required Visual Studio Code extensions (comma-separated)
       extensions-list: 'GitHub.codespaces,GitHub.vscode-github-actions'
 
       # Optional: Path to devcontainer.json
@@ -37,7 +37,7 @@ Steps:
 
 | Input               | Description                                         | Required | Default                                                                                                                                                                            |
 | ------------------- | --------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `extensions-list`   | Comma-separated list of required VS Code extensions | Yes      | GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql |
+| `extensions-list`   | Comma-separated list of required Visual Studio Code extensions | Yes      | GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql |
 | `devcontainer-path` | Path to devcontainer.json file                      | No       | .devcontainer/devcontainer.json                                                                                                                                                    |
 | `validate-tasks`    | Enable validation of build, test, and run tasks     | No       | false                                                                                                                                                                              |
 
