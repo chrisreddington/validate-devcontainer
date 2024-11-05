@@ -57,7 +57,9 @@ jobs:
         id: test-action
         uses: ./
         with:
-          milliseconds: 1000
+          extensions-list: 'GitHub.codespaces,github.vscode-github-actions'
+          devcontainer-path: '.devcontainer/devcontainer.json'
+          validate-tasks: 'true'
 
       - name: Print Output
         id: output
