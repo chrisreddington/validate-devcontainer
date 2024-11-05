@@ -1,16 +1,15 @@
 {
-  "name": "javascript-action",
-  "description": "GitHub Actions JavaScript Template",
+  "name": "devcontainer-validator",
+  "description": "Validate Dev Container Configuration",
   "version": "0.0.0",
-  "author": "",
-  "private": true,
-  "homepage": "https://github.com/actions/javascript-action#readme",
+  "author": "Chris Reddington",
+  "homepage": "https://github.com/chrisreddington/devcontainer-validator",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/javascript-action.git"
+    "url": "git+https://github.com/chrisreddington/devcontainer-validator.git"
   },
   "bugs": {
-    "url": "https://github.com/actions/javascript-action/issues"
+    "url": "https://github.com/chrisreddington/devcontainer-validator/issues"
   },
   "keywords": [
     "GitHub",
@@ -21,7 +20,7 @@
     ".": "./dist/index.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "bundle": "npm run format:write && npm run package",

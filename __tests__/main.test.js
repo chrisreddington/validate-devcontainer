@@ -1,96 +1,274 @@
-/**
- * Unit tests for the action's main functionality, src/main.js
- */
-const core = require('@actions/core')
-const main = require('../src/main')
+const core = require('@actions/core');
+const main = require('../src/main');
+const fs = require('fs');
 
-// Mock the GitHub Actions core library
-const debugMock = jest.spyOn(core, 'debug').mockImplementation()
-const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
-const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
+// Mock fs module with constants and promises
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  promises: {
+    access: jest.fn(),
+    appendFile: jest.fn(),
+    writeFile: jest.fn()
+  },
+  constants: {
+    O_RDONLY: 0,
+    O_WRONLY: 1,
+    O_RDWR: 2,
+    S_IFMT: 0o170000,
+    S_IFREG: 0o100000,
+    S_IFDIR: 0o040000,
+    S_IFCHR: 0o020000,
+    S_IFBLK: 0o060000,
+    S_IFIFO: 0o010000,
+    S_IFLNK: 0o120000,
+    S_IFSOCK: 0o140000,
+    F_OK: 0,
+    R_OK: 4,
+    W_OK: 2,
+    X_OK: 1
+  }
+}));
 
-// Mock the action's main function
-const runMock = jest.spyOn(main, 'run')
+const getInputMock = jest.spyOn(core, 'getInput').mockImplementation();
+const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation();
+const infoMock = jest.spyOn(core, 'info').mockImplementation();
 
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
-
-describe('action', () => {
+describe('devcontainer-validator', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-  })
+    jest.clearAllMocks();
+  });
 
-  it('sets the time output', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return '500'
-        default:
-          return ''
-      }
-    })
+  describe('validateExtensions', () => {
+    it('should return empty array when all extensions are present', () => {
+      const devcontainerContent = {
+        customizations: {
+          vscode: {
+            extensions: ['ext1', 'ext2', 'ext3']
+          }
+        }
+      };
+      const requiredExtensions = ['ext1', 'ext2'];
+      
+      const result = main.validateExtensions(devcontainerContent, requiredExtensions);
+      expect(result).toEqual([]);
+    });
 
-    await main.run()
-    expect(runMock).toHaveReturned()
+    it('should return missing extensions when some are not configured', () => {
+      const devcontainerContent = {
+        customizations: {
+          vscode: {
+            extensions: ['ext1']
+          }
+        }
+      };
+      const requiredExtensions = ['ext1', 'ext2', 'ext3'];
+      
+      const result = main.validateExtensions(devcontainerContent, requiredExtensions);
+      expect(result).toEqual(['ext2', 'ext3']);
+    });
 
-    // Verify that all of the core library functions were called correctly
-    expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-    expect(debugMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringMatching(timeRegex)
-    )
-    expect(debugMock).toHaveBeenNthCalledWith(
-      3,
-      expect.stringMatching(timeRegex)
-    )
-    expect(setOutputMock).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      expect.stringMatching(timeRegex)
-    )
-  })
+    it('should handle empty extensions configuration', () => {
+      const devcontainerContent = {
+        customizations: {
+          vscode: {
+            extensions: []
+          }
+        }
+      };
+      const requiredExtensions = ['ext1', 'ext2'];
+      
+      const result = main.validateExtensions(devcontainerContent, requiredExtensions);
+      expect(result).toEqual(['ext1', 'ext2']);
+    });
+  });
 
-  it('sets a failed status', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return 'this is not a number'
-        default:
-          return ''
-      }
-    })
+  describe('validateTasks', () => {
+    it('should return null when all required tasks are present', () => {
+      const devcontainerContent = {
+        tasks: {
+          build: 'go build .',
+          test: 'go test ./...',
+          run: 'go run .'
+        }
+      };
+      
+      const result = main.validateTasks(devcontainerContent);
+      expect(result).toBeNull();
+    });
 
-    await main.run()
-    expect(runMock).toHaveReturned()
+    it('should return error when tasks property is missing', () => {
+      const devcontainerContent = {};
+      
+      const result = main.validateTasks(devcontainerContent);
+      expect(result).toBe("'tasks' property is missing");
+    });
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds not a number'
-    )
-  })
+    it('should return error when required tasks are missing', () => {
+      const devcontainerContent = {
+        tasks: {
+          build: 'go build .',
+          test: 'go test ./...'
+        }
+      };
+      
+      const result = main.validateTasks(devcontainerContent);
+      expect(result).toBe('Missing or invalid required tasks: run');
+    });
 
-  it('fails if no input is provided', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          throw new Error('Input required and not supplied: milliseconds')
-        default:
-          return ''
-      }
-    })
+    it('should return error when tasks are not strings', () => {
+      const devcontainerContent = {
+        tasks: {
+          build: ['go build .'],
+          test: 'go test ./...',
+          run: 'go run .'
+        }
+      };
+      
+      const result = main.validateTasks(devcontainerContent);
+      expect(result).toBe('Missing or invalid required tasks: build');
+    });
+  });
 
-    await main.run()
-    expect(runMock).toHaveReturned()
+  describe('run', () => {
+    it('should pass when all extensions are present', async () => {
+      const mockDevcontainer = {
+        customizations: {
+          vscode: {
+            extensions: ['ext1', 'ext2']
+          }
+        }
+      };
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'Input required and not supplied: milliseconds'
-    )
-  })
-})
+      getInputMock.mockImplementation(name => {
+        switch (name) {
+          case 'extensions-list':
+            return 'ext1,ext2';
+          case 'validate-tasks':
+            return 'false';
+          default:
+            return '.devcontainer/devcontainer.json';
+        }
+      });
+
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify(mockDevcontainer));
+
+      await main.run();
+      expect(infoMock).toHaveBeenCalledWith('All validations passed successfully');
+    });
+
+    it('should fail when devcontainer.json is not found', async () => {
+      getInputMock.mockImplementation(name => {
+        switch (name) {
+          case 'extensions-list':
+            return 'ext1,ext2';
+          case 'validate-tasks':
+            return 'false';
+          default:
+            return '.devcontainer/devcontainer.json';
+        }
+      });
+
+      fs.existsSync.mockReturnValue(false);
+
+      await main.run();
+      expect(setFailedMock).toHaveBeenCalledWith(
+        expect.stringContaining('devcontainer.json not found')
+      );
+    });
+
+    it('should fail when required extensions are missing', async () => {
+      const mockDevcontainer = {
+        customizations: {
+          vscode: {
+            extensions: ['ext1']
+          }
+        }
+      };
+
+      getInputMock.mockImplementation(name => {
+        switch (name) {
+          case 'extensions-list':
+            return 'ext1,ext2';
+          case 'validate-tasks':
+            return 'false';
+          default:
+            return '.devcontainer/devcontainer.json';
+        }
+      });
+
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify(mockDevcontainer));
+
+      await main.run();
+      expect(setFailedMock).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required extensions: ext2')
+      );
+    });
+
+    it('should validate tasks when validate-tasks is true', async () => {
+      const mockDevcontainer = {
+        customizations: {
+          vscode: {
+            extensions: ['ext1']
+          }
+        },
+        tasks: {
+          build: 'build cmd',
+          test: 'test cmd',
+          run: 'run cmd'
+        }
+      };
+
+      getInputMock.mockImplementation(name => {
+        switch (name) {
+          case 'extensions-list':
+            return 'ext1';
+          case 'validate-tasks':
+            return 'true';
+          default:
+            return '.devcontainer/devcontainer.json';
+        }
+      });
+
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify(mockDevcontainer));
+
+      await main.run();
+      expect(infoMock).toHaveBeenCalledWith('All validations passed successfully');
+    });
+
+    it('should fail when tasks validation fails', async () => {
+      const mockDevcontainer = {
+        customizations: {
+          vscode: {
+            extensions: ['ext1']
+          }
+        },
+        tasks: {
+          build: 'build cmd'
+        }
+      };
+
+      getInputMock.mockImplementation(name => {
+        switch (name) {
+          case 'extensions-list':
+            return 'ext1';
+          case 'validate-tasks':
+            return 'true';
+          default:
+            return '.devcontainer/devcontainer.json';
+        }
+      });
+
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue(JSON.stringify(mockDevcontainer));
+
+      await main.run();
+      expect(setFailedMock).toHaveBeenCalledWith(
+        expect.stringContaining('Missing or invalid required tasks: test, run')
+      );
+    });
+  });
+});

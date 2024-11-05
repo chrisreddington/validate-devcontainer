@@ -1,19 +1,21 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Validate Dev Container Configuration'
+description: 'Validates that required VS Code extensions are configured in devcontainer.json'
+author: 'Chris Reddington'
 
-# Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  extensions-list:
+    description: 'Comma-separated list of required VS Code extensions'
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+    default: 'GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql'
+  devcontainer-path:
+    description: 'Path to devcontainer.json file'
+    required: false
+    default: '.devcontainer/devcontainer.json'
+  validate-tasks:
+    description: 'Enable validation of build, test, and run tasks'
+    required: false
+    default: 'false'
 
 runs:
-  using: node20
+  using: node22
   main: dist/index.js

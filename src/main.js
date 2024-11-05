@@ -1,30 +1,63 @@
-const core = require('@actions/core')
-const { wait } = require('./wait')
+const core = require('@actions/core');
+const fs = require('fs');
 
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
+function validateExtensions(devcontainerContent, requiredExtensions) {
+  const configuredExtensions = devcontainerContent?.customizations?.vscode?.extensions || [];
+  const missingExtensions = requiredExtensions.filter(
+    required => !configuredExtensions.includes(required)
+  );
+  return missingExtensions;
+}
+
+function validateTasks(devcontainerContent) {
+  const tasks = devcontainerContent.tasks;
+  if (!tasks) {
+    return "'tasks' property is missing";
+  }
+
+  const requiredTasks = ['build', 'test', 'run'];
+  const missingTasks = requiredTasks.filter(task => !tasks[task] || typeof tasks[task] !== 'string');
+  
+  if (missingTasks.length > 0) {
+    return `Missing or invalid required tasks: ${missingTasks.join(', ')}`;
+  }
+  
+  return null;
+}
+
 async function run() {
   try {
-    const ms = core.getInput('milliseconds', { required: true })
+    const extensionsList = core.getInput('extensions-list', { required: true });
+    const devcontainerPath = core.getInput('devcontainer-path', { required: false }) || '.devcontainer/devcontainer.json';
+    const shouldValidateTasks = core.getInput('validate-tasks') === 'true';
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    if (!fs.existsSync(devcontainerPath)) {
+      throw new Error(`devcontainer.json not found at ${devcontainerPath}`);
+    }
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    const devcontainerContent = JSON.parse(fs.readFileSync(devcontainerPath, 'utf8'));
+    const requiredExtensions = extensionsList.split(',').map(ext => ext.trim());
+    const missingExtensions = validateExtensions(devcontainerContent, requiredExtensions);
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    if (missingExtensions.length > 0) {
+      throw new Error(`Missing required extensions: ${missingExtensions.join(', ')}`);
+    }
+
+    if (shouldValidateTasks) {
+      const tasksError = validateTasks(devcontainerContent);
+      if (tasksError) {
+        throw new Error(tasksError);
+      }
+    }
+
+    core.info('All validations passed successfully');
   } catch (error) {
-    // Fail the workflow run if an error occurs
-    core.setFailed(error.message)
+    core.setFailed(error.message);
   }
 }
 
 module.exports = {
-  run
+  run,
+  validateExtensions,
+  validateTasks
 }
