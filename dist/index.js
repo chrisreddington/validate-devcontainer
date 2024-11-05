@@ -3438,7 +3438,10 @@ function validateExtensions(devcontainerContent, requiredExtensions) {
   const configuredExtensions =
     devcontainerContent?.customizations?.vscode?.extensions || []
   const missingExtensions = requiredExtensions.filter(
-    required => !configuredExtensions.includes(required)
+    required =>
+      !configuredExtensions.some(
+        configured => configured.toLowerCase() === required.toLowerCase()
+      )
   )
   return missingExtensions
 }

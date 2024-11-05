@@ -89,6 +89,39 @@ describe('devcontainer-validator', () => {
       )
       expect(result).toEqual(['ext1', 'ext2'])
     })
+
+    it('should match extensions case insensitively', () => {
+      const devcontainerContent = {
+        customizations: {
+          vscode: {
+            extensions: ['EXT1', 'eXt2', 'ExT3']
+          }
+        }
+      }
+      const requiredExtensions = ['ext1', 'EXT2', 'exT3']
+
+      const result = main.validateExtensions(
+        devcontainerContent,
+        requiredExtensions
+      )
+      expect(result).toEqual([])
+    })
+
+    it('should report missing extensions case insensitively', () => {
+      const devcontainerContent = {
+        customizations: {
+          vscode: {
+            extensions: ['EXT1']
+          }
+        }
+      }
+      const requiredExtensions = ['ext1', 'EXT2', 'exT3']
+      const result = main.validateExtensions(
+        devcontainerContent,
+        requiredExtensions
+      )
+      expect(result).toEqual(['EXT2', 'exT3'])
+    })
   })
 
   describe('validateTasks', () => {
