@@ -9,7 +9,8 @@ configuration in devcontainer.json files.
 
 ## Features
 
-- Validates presence of required Visual Studio Code extensions in devcontainer.json
+- Validates presence of required Visual Studio Code extensions in
+  devcontainer.json
 - Optional validation of common development tasks (build, test, run)
 - Customizable devcontainer.json path
 - Configurable extension requirements
@@ -35,11 +36,11 @@ Steps:
 
 ### Inputs
 
-| Input               | Description                                         | Required | Default                                                                                                                                                                            |
-| ------------------- | --------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Input               | Description                                                    | Required | Default                                                                                                                                                                            |
+| ------------------- | -------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `extensions-list`   | Comma-separated list of required Visual Studio Code extensions | Yes      | GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql |
-| `devcontainer-path` | Path to devcontainer.json file                      | No       | .devcontainer/devcontainer.json                                                                                                                                                    |
-| `validate-tasks`    | Enable validation of build, test, and run tasks     | No       | false                                                                                                                                                                              |
+| `devcontainer-path` | Path to devcontainer.json file                                 | No       | .devcontainer/devcontainer.json                                                                                                                                                    |
+| `validate-tasks`    | Enable validation of build, test, and run tasks                | No       | false                                                                                                                                                                              |
 
 #### Extension Validation
 
