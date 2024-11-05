@@ -12,6 +12,7 @@
         "davidanson.vscode-markdownlint",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
+        "github.codespaces",
         "github.copilot",
         "github.copilot-chat",
         "github.vscode-github-actions",
