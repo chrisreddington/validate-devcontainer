@@ -4,8 +4,8 @@
 ![CI](https://github.com/chrisreddington/devcontainer-validator/actions/workflows/ci.yml/badge.svg)
 
 A GitHub Action to validate Dev Container configuration. This action checks
-required Visual Studio Code extensions and optionally validates task configuration in
-devcontainer.json files.
+required Visual Studio Code extensions and optionally validates task
+configuration in devcontainer.json files.
 
 ## Features
 
@@ -80,9 +80,9 @@ Each task must be defined as a string value.
 
 1. Install dependencies: npm install
 
-2. Run tests: npm test
+1. Run tests: npm test
 
-3. Build the action: npm run bundle
+1. Build the action: npm run bundle
 
 ## License
 
