@@ -38,5 +38,10 @@
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers-contrib/features/prettier:1": {}
+  },
+  "tasks": {
+    "build": "npm run bundle",
+    "test": "npm run ci-test",
+    "run": "npm run all"
   }
 }
