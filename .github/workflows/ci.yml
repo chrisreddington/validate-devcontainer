@@ -60,7 +60,3 @@ jobs:
           extensions-list: 'GitHub.codespaces,github.vscode-github-actions'
           devcontainer-path: '.devcontainer/devcontainer.json'
           validate-tasks: 'true'
-
-      - name: Print Output
-        id: output
-        run: echo "${{ steps.test-action.outputs.time }}"
