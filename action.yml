@@ -1,5 +1,7 @@
 name: 'Validate Dev Container Configuration'
-description: 'Validates that required VS Code extensions are configured in devcontainer.json'
+description:
+  'Validates that required VS Code extensions are configured in
+  devcontainer.json'
 author: 'Chris Reddington'
 
 inputs:
