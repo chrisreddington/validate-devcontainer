@@ -36,11 +36,11 @@ Steps:
 
 ### Inputs
 
-| Input               | Description                                                    | Required | Default                                                                 |
-| ------------------- | -------------------------------------------------------------- | -------- | ----------------------------------------------------------------------- |
+| Input               | Description                                                    | Required | Default                                                                                                                                                                            |
+| ------------------- | -------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `extensions-list`   | Comma-separated list of required Visual Studio Code extensions | Yes      | GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql |
-| `devcontainer-path` | Path to devcontainer.json file                                 | No       | .devcontainer/devcontainer.json                                         |
-| `validate-tasks`    | Enable validation of build, test, and run tasks                | No       | false                                                                   |
+| `devcontainer-path` | Path to devcontainer.json file                                 | No       | .devcontainer/devcontainer.json                                                                                                                                                    |
+| `validate-tasks`    | Enable validation of build, test, and run tasks                | No       | false                                                                                                                                                                              |
 
 #### Extension Validation
 
