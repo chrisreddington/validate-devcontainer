@@ -56,6 +56,9 @@ function validateFeatures(
   devcontainerContent: DevcontainerContent,
   requiredFeatures: string[]
 ): string[] {
+  if (!requiredFeatures || requiredFeatures.length === 0) {
+    return []
+  }
   const configuredFeatures = devcontainerContent.features || {}
   const missingFeatures = requiredFeatures.filter(
     required => !(required in configuredFeatures)
@@ -158,19 +161,23 @@ export async function run(): Promise<void> {
       }
     }
 
-    const requiredFeatures = core
-      .getInput('features-list', { required: false })
-      .split(',')
-      .map(feature => feature.trim())
-    const missingFeatures = validateFeatures(
-      devcontainerContent,
-      requiredFeatures
-    )
-
-    if (missingFeatures.length > 0) {
-      throw new Error(
-        `Missing required features: ${missingFeatures.join(', ')}`
+    const featuresListInput = core.getInput('features-list', {
+      required: false
+    })
+    if (featuresListInput) {
+      const requiredFeatures = featuresListInput
+        .split(',')
+        .map(feature => feature.trim())
+      const missingFeatures = validateFeatures(
+        devcontainerContent,
+        requiredFeatures
       )
+
+      if (missingFeatures.length > 0) {
+        throw new Error(
+          `Missing required features: ${missingFeatures.join(', ')}`
+        )
+      }
     }
 
     core.info('All validations passed successfully')

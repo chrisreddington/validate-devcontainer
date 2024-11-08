@@ -120,4 +120,44 @@ describe('validate-devcontainer', () => {
     expect(setFailedMock).not.toHaveBeenCalled()
     expect(infoMock).toHaveBeenCalledWith('All validations passed successfully')
   })
+
+  test('does not call validateFeatures when features-list is an empty string', async () => {
+    getInputMock.mockImplementation(name => {
+      switch (name) {
+        case 'extensions-list':
+          return 'ext1,ext2'
+        case 'devcontainer-path':
+          return 'path/to/devcontainer.json'
+        case 'validate-tasks':
+          return 'true'
+        case 'features-list':
+          return ''
+        default:
+          return ''
+      }
+    })
+
+    await run()
+    expect(setFailedMock).not.toHaveBeenCalled()
+    expect(infoMock).toHaveBeenCalledWith('All validations passed successfully')
+  })
+
+  test('does not call validateFeatures when features-list is not present', async () => {
+    getInputMock.mockImplementation(name => {
+      switch (name) {
+        case 'extensions-list':
+          return 'ext1,ext2'
+        case 'devcontainer-path':
+          return 'path/to/devcontainer.json'
+        case 'validate-tasks':
+          return 'true'
+        default:
+          return ''
+      }
+    })
+
+    await run()
+    expect(setFailedMock).not.toHaveBeenCalled()
+    expect(infoMock).toHaveBeenCalledWith('All validations passed successfully')
+  })
 })
