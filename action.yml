@@ -17,6 +17,10 @@ inputs:
     description: 'Enable validation of build, test, and run tasks'
     required: false
     default: 'false'
+  features-list:
+    description: 'Comma-separated list of required devcontainer features'
+    required: false
+    default: ''
 
 runs:
   using: node20

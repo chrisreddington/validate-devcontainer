@@ -17,6 +17,7 @@ configuration in devcontainer.json files.
 - Optional validation of common development tasks (build, test, run)
 - Customizable devcontainer.json path
 - Configurable extension requirements
+- Validates presence of required devcontainer features in devcontainer.json
 
 ## Usage
 
@@ -35,6 +36,9 @@ Steps:
 
       # Optional: Enable task validation
       validate-tasks: 'true'
+
+      # Optional: Required devcontainer features (comma-separated)
+      features-list: 'ghcr.io/devcontainers/features/github-cli:1,ghcr.io/devcontainers-contrib/features/prettier:1'
 ```
 
 ### Inputs
@@ -44,6 +48,7 @@ Steps:
 | `extensions-list`   | Comma-separated list of required Visual Studio Code extensions | Yes      | GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql |
 | `devcontainer-path` | Path to devcontainer.json file                                 | No       | .devcontainer/devcontainer.json                                                                                                                                                    |
 | `validate-tasks`    | Enable validation of build, test, and run tasks                | No       | false                                                                                                                                                                              |
+| `features-list`     | Comma-separated list of required devcontainer features         | No       |                                                                                                                                                                                    |
 
 #### Extension Validation
 
@@ -63,6 +68,12 @@ required tasks in devcontainer.json:
 
 Each task must be defined as a string value.
 
+#### Feature Validation
+
+The action checks for the presence of the required features in the
+`features-list` input. The input is a comma-separated list of feature IDs. The
+action checks for the presence of each feature in the `devcontainer.json` file.
+
 #### Example devcontainer.json
 
 ```json
@@ -76,6 +87,10 @@ Each task must be defined as a string value.
     "build": "npm run build",
     "test": "npm test",
     "run": "npm start"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-contrib/features/prettier:1": {}
   }
 }
 ```

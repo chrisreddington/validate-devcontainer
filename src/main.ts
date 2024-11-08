@@ -12,6 +12,9 @@ interface DevcontainerContent {
   tasks?: {
     [key: string]: string
   }
+  features?: {
+    [key: string]: object
+  }
 }
 
 function validateExtensions(
@@ -49,6 +52,17 @@ function validateTasks(
   return null
 }
 
+function validateFeatures(
+  devcontainerContent: DevcontainerContent,
+  requiredFeatures: string[]
+): string[] {
+  const configuredFeatures = devcontainerContent.features || {}
+  const missingFeatures = requiredFeatures.filter(
+    required => !(required in configuredFeatures)
+  )
+  return missingFeatures
+}
+
 // Add this type guard function before the run() function
 function isDevcontainerContent(obj: unknown): obj is DevcontainerContent {
   if (typeof obj !== 'object' || obj === null) return false
@@ -71,6 +85,13 @@ function isDevcontainerContent(obj: unknown): obj is DevcontainerContent {
     if (typeof candidate.tasks !== 'object') return false
     for (const [, value] of Object.entries(candidate.tasks)) {
       if (typeof value !== 'string') return false
+    }
+  }
+
+  if (candidate.features !== undefined) {
+    if (typeof candidate.features !== 'object') return false
+    for (const [, value] of Object.entries(candidate.features)) {
+      if (typeof value !== 'object') return false
     }
   }
 
@@ -137,6 +158,21 @@ export async function run(): Promise<void> {
       }
     }
 
+    const requiredFeatures = core
+      .getInput('features-list', { required: false })
+      .split(',')
+      .map(feature => feature.trim())
+    const missingFeatures = validateFeatures(
+      devcontainerContent,
+      requiredFeatures
+    )
+
+    if (missingFeatures.length > 0) {
+      throw new Error(
+        `Missing required features: ${missingFeatures.join(', ')}`
+      )
+    }
+
     core.info('All validations passed successfully')
   } catch (error: unknown) {
     let errorMessage: string
@@ -154,6 +190,7 @@ export async function run(): Promise<void> {
 export {
   validateExtensions,
   validateTasks,
+  validateFeatures,
   DevcontainerContent,
   VSCodeCustomizations
 }
