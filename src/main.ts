@@ -77,6 +77,12 @@ function isDevcontainerContent(obj: unknown): obj is DevcontainerContent {
   return true
 }
 
+// Add this helper function to strip comments
+function stripJsonComments(jsonString: string): string {
+  // Remove single line comments (// ...)
+  return jsonString.replace(/\/\/.*$/gm, '')
+}
+
 export async function run(): Promise<void> {
   try {
     const extensionsList = core.getInput('extensions-list', { required: true })
@@ -95,7 +101,9 @@ export async function run(): Promise<void> {
     const fileContent = await fs.promises.readFile(devcontainerPath, 'utf8')
     let parsedContent: unknown
     try {
-      parsedContent = JSON.parse(fileContent) as unknown
+      // Strip comments before parsing
+      const cleanJson = stripJsonComments(fileContent)
+      parsedContent = JSON.parse(cleanJson) as unknown
     } catch (error) {
       throw new Error(
         `Invalid JSON in devcontainer.json: ${error instanceof Error ? error.message : String(error)}`

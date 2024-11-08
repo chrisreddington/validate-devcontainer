@@ -3503,6 +3503,11 @@ function isDevcontainerContent(obj) {
     }
     return true;
 }
+// Add this helper function to strip comments
+function stripJsonComments(jsonString) {
+    // Remove single line comments (// ...)
+    return jsonString.replace(/\/\/.*$/gm, '');
+}
 async function run() {
     try {
         const extensionsList = core.getInput('extensions-list', { required: true });
@@ -3519,7 +3524,9 @@ async function run() {
         const fileContent = await fs.promises.readFile(devcontainerPath, 'utf8');
         let parsedContent;
         try {
-            parsedContent = JSON.parse(fileContent);
+            // Strip comments before parsing
+            const cleanJson = stripJsonComments(fileContent);
+            parsedContent = JSON.parse(cleanJson);
         }
         catch (error) {
             throw new Error(`Invalid JSON in devcontainer.json: ${error instanceof Error ? error.message : String(error)}`);
