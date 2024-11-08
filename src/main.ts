@@ -109,7 +109,9 @@ function stripJsonComments(jsonString: string): string {
 
 export async function run(): Promise<void> {
   try {
-    const extensionsList = core.getInput('extensions-list', { required: true })
+    const extensionsList = core.getInput('required-extensions', {
+      required: true
+    })
     const devcontainerPath =
       core.getInput('devcontainer-path', { required: false }) ||
       '.devcontainer/devcontainer.json'
@@ -161,7 +163,7 @@ export async function run(): Promise<void> {
       }
     }
 
-    const featuresListInput = core.getInput('features-list', {
+    const featuresListInput = core.getInput('required-features', {
       required: false
     })
     if (featuresListInput) {

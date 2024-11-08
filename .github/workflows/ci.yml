@@ -57,6 +57,6 @@ jobs:
         id: test-action
         uses: ./
         with:
-          extensions-list: 'GitHub.codespaces,github.vscode-github-actions'
+          required-extensions: 'GitHub.codespaces,github.vscode-github-actions'
           devcontainer-path: '.devcontainer/devcontainer.json'
           validate-tasks: 'true'

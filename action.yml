@@ -5,7 +5,7 @@ description:
 author: 'Chris Reddington'
 
 inputs:
-  extensions-list:
+  required-extensions:
     description: 'Comma-separated list of required VS Code extensions'
     required: true
     default: 'GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql'
@@ -17,7 +17,7 @@ inputs:
     description: 'Enable validation of build, test, and run tasks'
     required: false
     default: 'false'
-  features-list:
+  required-features:
     description: 'Comma-separated list of required devcontainer features'
     required: false
     default: ''
