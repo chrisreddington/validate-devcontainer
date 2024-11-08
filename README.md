@@ -29,7 +29,7 @@ Steps:
     uses: chrisreddington/validate-devcontainer@v1
     with:
       # Required Visual Studio Code extensions (comma-separated)
-      extensions-list: 'GitHub.codespaces,GitHub.vscode-github-actions'
+      required-extensions: 'GitHub.codespaces,GitHub.vscode-github-actions'
 
       # Optional: Path to devcontainer.json
       devcontainer-path: '.devcontainer/devcontainer.json'
@@ -38,24 +38,24 @@ Steps:
       validate-tasks: 'true'
 
       # Optional: Required devcontainer features (comma-separated)
-      features-list: 'ghcr.io/devcontainers/features/github-cli:1,ghcr.io/devcontainers-contrib/features/prettier:1'
+      required-features: 'ghcr.io/devcontainers/features/github-cli:1,ghcr.io/devcontainers-contrib/features/prettier:1'
 ```
 
 ### Inputs
 
-| Input               | Description                                                    | Required | Default                                                                                                                                                                            |
-| ------------------- | -------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `extensions-list`   | Comma-separated list of required Visual Studio Code extensions | Yes      | GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql |
-| `devcontainer-path` | Path to devcontainer.json file                                 | No       | .devcontainer/devcontainer.json                                                                                                                                                    |
-| `validate-tasks`    | Enable validation of build, test, and run tasks                | No       | false                                                                                                                                                                              |
-| `features-list`     | Comma-separated list of required devcontainer features         | No       |                                                                                                                                                                                    |
+| Input                 | Description                                                    | Required | Default                                                                                                                                                                            |
+| --------------------- | -------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `required-extensions` | Comma-separated list of required Visual Studio Code extensions | Yes      | GitHub.codespaces,github.vscode-github-actions,GitHub.copilot,GitHub.copilot-chat,github.copilot-workspace,GitHub.vscode-pull-request-github,GitHub.remotehub,GitHub.vscode-codeql |
+| `devcontainer-path`   | Path to devcontainer.json file                                 | No       | .devcontainer/devcontainer.json                                                                                                                                                    |
+| `validate-tasks`      | Enable validation of build, test, and run tasks                | No       | false                                                                                                                                                                              |
+| `required-features`   | Comma-separated list of required devcontainer features         | No       |                                                                                                                                                                                    |
 
 #### Extension Validation
 
 The action checks for the presence of the required extensions in the
-`extensions-list` input. The input is a comma-separated list of extension IDs.
-The action checks for the presence of each extension in the `devcontainer.json`
-file.
+`required-extensions` input. The input is a comma-separated list of extension
+IDs. The action checks for the presence of each extension in the
+`devcontainer.json` file.
 
 #### Task Validation
 
@@ -71,8 +71,9 @@ Each task must be defined as a string value.
 #### Feature Validation
 
 The action checks for the presence of the required features in the
-`features-list` input. The input is a comma-separated list of feature IDs. The
-action checks for the presence of each feature in the `devcontainer.json` file.
+`required-features` input. The input is a comma-separated list of feature IDs.
+The action checks for the presence of each feature in the `devcontainer.json`
+file.
 
 #### Example devcontainer.json
 
