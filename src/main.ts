@@ -21,13 +21,24 @@ function validateExtensions(
   devcontainerContent: DevcontainerContent,
   requiredExtensions: string[]
 ): string[] {
+  core.debug(
+    `Validating extensions (required input: ${requiredExtensions.join(', ')})`
+  )
   const configuredExtensions =
     devcontainerContent?.customizations?.vscode?.extensions || []
+  core.debug(
+    `Extensions found in devcontainer: ${configuredExtensions.join(', ')}`
+  )
   const missingExtensions = requiredExtensions.filter(
     required =>
       !configuredExtensions.some(
         configured => configured.toLowerCase() === required.toLowerCase()
       )
+  )
+  core.debug(
+    `Required extensions missing from devcontainer: ${
+      missingExtensions.length > 0 ? missingExtensions.join(', ') : 'none'
+    }`
   )
   return missingExtensions
 }
@@ -35,11 +46,16 @@ function validateExtensions(
 function validateTasks(
   devcontainerContent: DevcontainerContent
 ): string | null {
+  core.debug('Validating required tasks (build, test, run)')
   const tasks = devcontainerContent.tasks
   if (!tasks) {
+    core.debug('No tasks section found in devcontainer')
     return "'tasks' property is missing"
   }
 
+  core.debug(
+    `Tasks configured in devcontainer: ${Object.keys(tasks).join(', ')}`
+  )
   const requiredTasks = ['build', 'test', 'run']
   const missingTasks = requiredTasks.filter(
     task => !tasks[task] || typeof tasks[task] !== 'string'
@@ -56,10 +72,17 @@ function validateFeatures(
   devcontainerContent: DevcontainerContent,
   requiredFeatures: string[]
 ): string[] {
+  core.debug(
+    `Validating features (required input: ${requiredFeatures.join(', ')})`
+  )
   if (!requiredFeatures || requiredFeatures.length === 0) {
+    core.debug('No features specified in required-features input')
     return []
   }
   const configuredFeatures = devcontainerContent.features || {}
+  core.debug(
+    `Features found in devcontainer: ${Object.keys(configuredFeatures).join(', ')}`
+  )
   const missingFeatures = requiredFeatures.filter(
     required => !(required in configuredFeatures)
   )
@@ -109,30 +132,41 @@ function stripJsonComments(jsonString: string): string {
 
 export async function run(): Promise<void> {
   try {
+    core.debug('Starting devcontainer validation')
     const extensionsList = core.getInput('required-extensions', {
       required: true
     })
+    core.debug(`Required extensions input: ${extensionsList}`)
+
     const devcontainerPath =
       core.getInput('devcontainer-path', { required: false }) ||
       '.devcontainer/devcontainer.json'
+    core.debug(`Using devcontainer path: ${devcontainerPath}`)
+
     const shouldValidateTasks = core.getInput('validate-tasks') === 'true'
+    core.debug(`Task validation enabled: ${shouldValidateTasks}`)
 
     try {
       await fs.promises.access(devcontainerPath)
+      core.debug('Successfully located devcontainer.json file')
     } catch {
       throw new Error(`devcontainer.json not found at ${devcontainerPath}`)
     }
 
-    // Update the JSON parse section with explicit type assertion
     const fileContent = await fs.promises.readFile(devcontainerPath, 'utf8')
+    core.debug('Successfully read devcontainer.json content')
+
     let parsedContent: unknown
     try {
-      // Strip comments before parsing
       const cleanJson = stripJsonComments(fileContent)
+      core.debug('Stripped comments from JSON content')
       parsedContent = JSON.parse(cleanJson) as unknown
+      core.debug('Successfully parsed JSON content')
     } catch (error) {
       throw new Error(
-        `Invalid JSON in devcontainer.json: ${error instanceof Error ? error.message : String(error)}`
+        `Invalid JSON in devcontainer.json: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       )
     }
 
@@ -184,6 +218,7 @@ export async function run(): Promise<void> {
 
     core.info('All validations passed successfully')
   } catch (error: unknown) {
+    core.debug('An error occurred during validation')
     let errorMessage: string
     if (error instanceof Error) {
       errorMessage = error.message
