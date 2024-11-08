@@ -3460,6 +3460,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 exports.validateExtensions = validateExtensions;
 exports.validateTasks = validateTasks;
+exports.validateFeatures = validateFeatures;
 const core = __importStar(__nccwpck_require__(484));
 const fs = __importStar(__nccwpck_require__(896));
 function validateExtensions(devcontainerContent, requiredExtensions) {
@@ -3478,6 +3479,14 @@ function validateTasks(devcontainerContent) {
         return `Missing or invalid required tasks: ${missingTasks.join(', ')}`;
     }
     return null;
+}
+function validateFeatures(devcontainerContent, requiredFeatures) {
+    if (!requiredFeatures || requiredFeatures.length === 0) {
+        return [];
+    }
+    const configuredFeatures = devcontainerContent.features || {};
+    const missingFeatures = requiredFeatures.filter(required => !(required in configuredFeatures));
+    return missingFeatures;
 }
 // Add this type guard function before the run() function
 function isDevcontainerContent(obj) {
@@ -3498,6 +3507,14 @@ function isDevcontainerContent(obj) {
             return false;
         for (const [, value] of Object.entries(candidate.tasks)) {
             if (typeof value !== 'string')
+                return false;
+        }
+    }
+    if (candidate.features !== undefined) {
+        if (typeof candidate.features !== 'object')
+            return false;
+        for (const [, value] of Object.entries(candidate.features)) {
+            if (typeof value !== 'object')
                 return false;
         }
     }
@@ -3546,6 +3563,18 @@ async function run() {
             const tasksError = validateTasks(devcontainerContent);
             if (tasksError) {
                 throw new Error(tasksError);
+            }
+        }
+        const featuresListInput = core.getInput('features-list', {
+            required: false
+        });
+        if (featuresListInput) {
+            const requiredFeatures = featuresListInput
+                .split(',')
+                .map(feature => feature.trim());
+            const missingFeatures = validateFeatures(devcontainerContent, requiredFeatures);
+            if (missingFeatures.length > 0) {
+                throw new Error(`Missing required features: ${missingFeatures.join(', ')}`);
             }
         }
         core.info('All validations passed successfully');

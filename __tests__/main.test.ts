@@ -3,6 +3,7 @@ import {
   DevcontainerContent,
   validateExtensions,
   validateTasks,
+  validateFeatures,
   run
 } from '../src/main'
 
@@ -23,6 +24,10 @@ jest.mock('fs', () => ({
           build: 'npm run build',
           test: 'npm test',
           run: 'npm start'
+        },
+        features: {
+          'ghcr.io/devcontainers/features/github-cli:1': {},
+          'ghcr.io/devcontainers-contrib/features/prettier:1': {}
         }
       })
     ),
@@ -62,6 +67,10 @@ const mockDevcontainer: DevcontainerContent = {
     build: 'npm run build',
     test: 'npm test',
     run: 'npm start'
+  },
+  features: {
+    'ghcr.io/devcontainers/features/github-cli:1': {},
+    'ghcr.io/devcontainers-contrib/features/prettier:1': {}
   }
 }
 
@@ -81,7 +90,59 @@ describe('validate-devcontainer', () => {
     expect(result).toBeDefined()
   })
 
+  test('validates features', () => {
+    const requiredFeatures = [
+      'ghcr.io/devcontainers/features/github-cli:1',
+      'ghcr.io/devcontainers-contrib/features/prettier:1',
+      'ghcr.io/devcontainers/features/docker-in-docker:1'
+    ]
+    const result = validateFeatures(mockDevcontainer, requiredFeatures)
+    expect(result).toBeDefined()
+  })
+
   test('runs validation', async () => {
+    getInputMock.mockImplementation(name => {
+      switch (name) {
+        case 'extensions-list':
+          return 'ext1,ext2'
+        case 'devcontainer-path':
+          return 'path/to/devcontainer.json'
+        case 'validate-tasks':
+          return 'true'
+        case 'features-list':
+          return 'ghcr.io/devcontainers/features/github-cli:1,ghcr.io/devcontainers-contrib/features/prettier:1'
+        default:
+          return ''
+      }
+    })
+
+    await run()
+    expect(setFailedMock).not.toHaveBeenCalled()
+    expect(infoMock).toHaveBeenCalledWith('All validations passed successfully')
+  })
+
+  test('does not call validateFeatures when features-list is an empty string', async () => {
+    getInputMock.mockImplementation(name => {
+      switch (name) {
+        case 'extensions-list':
+          return 'ext1,ext2'
+        case 'devcontainer-path':
+          return 'path/to/devcontainer.json'
+        case 'validate-tasks':
+          return 'true'
+        case 'features-list':
+          return ''
+        default:
+          return ''
+      }
+    })
+
+    await run()
+    expect(setFailedMock).not.toHaveBeenCalled()
+    expect(infoMock).toHaveBeenCalledWith('All validations passed successfully')
+  })
+
+  test('does not call validateFeatures when features-list is not present', async () => {
     getInputMock.mockImplementation(name => {
       switch (name) {
         case 'extensions-list':
