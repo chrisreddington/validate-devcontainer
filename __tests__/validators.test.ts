@@ -5,7 +5,15 @@ import {
 } from '../src/validators'
 import { DevcontainerContent } from '../src/types'
 
+/**
+ * Test suite for devcontainer.json validation functions.
+ * Covers extension, task, and feature validation functionality.
+ */
 describe('validators', () => {
+  /**
+   * Tests for validateExtensions function.
+   * Validates the presence of required VS Code extensions in devcontainer configuration.
+   */
   describe('validateExtensions', () => {
     test('should return missing extensions', () => {
       const content: DevcontainerContent = {
@@ -38,6 +46,14 @@ describe('validators', () => {
     })
   })
 
+  /**
+   * Tests for validateTasks function.
+   * Ensures required build/test/run tasks are properly configured.
+   * Required tasks:
+   * - build: For building the project
+   * - test: For running tests
+   * - run: For starting the application
+   */
   describe('validateTasks', () => {
     test('should return error when required tasks are missing', () => {
       const content: DevcontainerContent = {
@@ -80,6 +96,10 @@ describe('validators', () => {
     })
   })
 
+  /**
+   * Tests for validateFeatures function.
+   * Verifies the presence of required devcontainer features.
+   */
   describe('validateFeatures', () => {
     test('should return missing features', () => {
       const content: DevcontainerContent = {

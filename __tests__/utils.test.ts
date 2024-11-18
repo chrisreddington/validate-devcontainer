@@ -1,6 +1,17 @@
 import { isDevcontainerContent, stripJsonComments } from '../src/utils'
 
+/**
+ * Test suite for utility functions used in devcontainer validation.
+ */
 describe('utils', () => {
+  /**
+   * Tests for isDevcontainerContent type guard.
+   * Validates the structure of devcontainer.json contents against the expected schema.
+   * Key validations:
+   * - Customizations (VS Code extensions)
+   * - Tasks configuration
+   * - Features configuration
+   */
   describe('isDevcontainerContent', () => {
     test('should return false for null', () => {
       expect(isDevcontainerContent(null)).toBeFalsy()
@@ -75,6 +86,13 @@ describe('utils', () => {
     })
   })
 
+  /**
+   * Tests for stripJsonComments utility.
+   * Ensures proper handling of JSON files with comments, including:
+   * - Single-line comments
+   * - Multiple comments
+   * - End-of-line comments
+   */
   describe('stripJsonComments', () => {
     test('should remove single line comments', () => {
       const input = '{\n// comment\n"key": "value"\n}'

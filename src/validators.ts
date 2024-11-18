@@ -1,30 +1,50 @@
 import * as core from '@actions/core'
 import { DevcontainerContent } from './types'
 
+/**
+ * Validates the presence of required VS Code extensions in the devcontainer configuration
+ * @param devcontainerContent - The parsed devcontainer.json content
+ * @param requiredExtensions - Array of extension IDs that must be present
+ * @returns Array of extension IDs that are missing from the configuration
+ */
 export function validateExtensions(
   devcontainerContent: DevcontainerContent,
   requiredExtensions: string[]
 ): string[] {
-  core.debug(
-    `Validating extensions (required input: ${requiredExtensions.join(', ')})`
-  )
+  // Extract configured extensions with fallback to empty array
   const configuredExtensions =
     devcontainerContent?.customizations?.vscode?.extensions || []
+
+  // Log validation context
   core.debug(
-    `Extensions found in devcontainer: ${configuredExtensions.join(', ')}`
+    `Validating against required extensions: ${requiredExtensions.join(', ')}`
   )
-  const missingExtensions = requiredExtensions.filter(
-    required =>
-      !configuredExtensions.some(
-        configured => configured.toLowerCase() === required.toLowerCase()
-      )
-  )
-  core.debug(
-    `Required extensions missing from devcontainer: ${missingExtensions.length > 0 ? missingExtensions.join(', ') : 'none'}`
-  )
+  core.debug(`Found configured extensions: ${configuredExtensions.join(', ')}`)
+
+  // Perform case-insensitive comparison to find missing extensions
+  const missingExtensions = requiredExtensions.filter(required => {
+    const requiredLower = required.toLowerCase()
+    return !configuredExtensions.some(
+      configured => configured.toLowerCase() === requiredLower
+    )
+  })
+
+  // Log validation results
+  const resultMessage =
+    missingExtensions.length > 0
+      ? `Missing: ${missingExtensions.join(', ')}`
+      : 'All required extensions present'
+  core.debug(resultMessage)
+
   return missingExtensions
 }
 
+/**
+ * Validates the presence and configuration of required development tasks
+ * Checks for 'build', 'test', and 'run' tasks with proper string commands
+ * @param devcontainerContent - The parsed devcontainer.json content
+ * @returns Error message if validation fails, null if successful
+ */
 export function validateTasks(
   devcontainerContent: DevcontainerContent
 ): string | null {
@@ -50,6 +70,12 @@ export function validateTasks(
   return null
 }
 
+/**
+ * Validates the presence of required Dev Container features
+ * @param devcontainerContent - The parsed devcontainer.json content
+ * @param requiredFeatures - Array of feature identifiers that must be present
+ * @returns Array of feature identifiers that are missing from the configuration
+ */
 export function validateFeatures(
   devcontainerContent: DevcontainerContent,
   requiredFeatures: string[]
