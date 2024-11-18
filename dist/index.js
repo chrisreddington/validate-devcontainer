@@ -3649,11 +3649,11 @@ function validateTasks(devcontainerContent) {
     return null;
 }
 function validateFeatures(devcontainerContent, requiredFeatures) {
-    core.debug(`Validating features (required input: ${requiredFeatures.join(', ')})`);
     if (!requiredFeatures || requiredFeatures.length === 0) {
         core.debug('No features specified in required-features input');
         return [];
     }
+    core.debug(`Validating features (required input: ${requiredFeatures.join(', ')})`);
     const configuredFeatures = devcontainerContent.features || {};
     core.debug(`Features found in devcontainer: ${Object.keys(configuredFeatures).join(', ')}`);
     const missingFeatures = requiredFeatures.filter(required => !(required in configuredFeatures));

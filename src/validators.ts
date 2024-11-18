@@ -54,13 +54,14 @@ export function validateFeatures(
   devcontainerContent: DevcontainerContent,
   requiredFeatures: string[]
 ): string[] {
-  core.debug(
-    `Validating features (required input: ${requiredFeatures.join(', ')})`
-  )
   if (!requiredFeatures || requiredFeatures.length === 0) {
     core.debug('No features specified in required-features input')
     return []
   }
+
+  core.debug(
+    `Validating features (required input: ${requiredFeatures.join(', ')})`
+  )
   const configuredFeatures = devcontainerContent.features || {}
   core.debug(
     `Features found in devcontainer: ${Object.keys(configuredFeatures).join(', ')}`
