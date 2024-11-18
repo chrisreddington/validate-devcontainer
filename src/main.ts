@@ -1,234 +1,184 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
+import {
+  validateExtensions,
+  validateTasks,
+  validateFeatures
+} from './validators'
+import { isDevcontainerContent, stripJsonComments } from './utils'
+import { DevcontainerContent, VSCodeCustomizations } from './types'
 
-interface VSCodeCustomizations {
-  vscode: {
-    extensions: string[]
-  }
-}
-
-interface DevcontainerContent {
-  customizations?: VSCodeCustomizations
-  tasks?: {
-    [key: string]: string
-  }
-  features?: {
-    [key: string]: object
-  }
-}
-
-function validateExtensions(
-  devcontainerContent: DevcontainerContent,
-  requiredExtensions: string[]
-): string[] {
-  core.debug(
-    `Validating extensions (required input: ${requiredExtensions.join(', ')})`
-  )
-  const configuredExtensions =
-    devcontainerContent?.customizations?.vscode?.extensions || []
-  core.debug(
-    `Extensions found in devcontainer: ${configuredExtensions.join(', ')}`
-  )
-  const missingExtensions = requiredExtensions.filter(
-    required =>
-      !configuredExtensions.some(
-        configured => configured.toLowerCase() === required.toLowerCase()
-      )
-  )
-  core.debug(
-    `Required extensions missing from devcontainer: ${
-      missingExtensions.length > 0 ? missingExtensions.join(', ') : 'none'
-    }`
-  )
-  return missingExtensions
-}
-
-function validateTasks(
-  devcontainerContent: DevcontainerContent
-): string | null {
-  core.debug('Validating required tasks (build, test, run)')
-  const tasks = devcontainerContent.tasks
-  if (!tasks) {
-    core.debug('No tasks section found in devcontainer')
-    return "'tasks' property is missing"
-  }
-
-  core.debug(
-    `Tasks configured in devcontainer: ${Object.keys(tasks).join(', ')}`
-  )
-  const requiredTasks = ['build', 'test', 'run']
-  const missingTasks = requiredTasks.filter(
-    task => !tasks[task] || typeof tasks[task] !== 'string'
-  )
-
-  if (missingTasks.length > 0) {
-    return `Missing or invalid required tasks: ${missingTasks.join(', ')}`
-  }
-
-  return null
-}
-
-function validateFeatures(
-  devcontainerContent: DevcontainerContent,
-  requiredFeatures: string[]
-): string[] {
-  core.debug(
-    `Validating features (required input: ${requiredFeatures.join(', ')})`
-  )
-  if (!requiredFeatures || requiredFeatures.length === 0) {
-    core.debug('No features specified in required-features input')
-    return []
-  }
-  const configuredFeatures = devcontainerContent.features || {}
-  core.debug(
-    `Features found in devcontainer: ${Object.keys(configuredFeatures).join(', ')}`
-  )
-  const missingFeatures = requiredFeatures.filter(
-    required => !(required in configuredFeatures)
-  )
-  return missingFeatures
-}
-
-// Add this type guard function before the run() function
-function isDevcontainerContent(obj: unknown): obj is DevcontainerContent {
-  if (typeof obj !== 'object' || obj === null) return false
-
-  const candidate = obj as Partial<DevcontainerContent>
-
-  if (candidate.customizations !== undefined) {
-    if (
-      typeof candidate.customizations !== 'object' ||
-      !candidate.customizations.vscode?.extensions
-    ) {
-      return false
-    }
-    if (!Array.isArray(candidate.customizations.vscode.extensions)) {
-      return false
-    }
-  }
-
-  if (candidate.tasks !== undefined) {
-    if (typeof candidate.tasks !== 'object') return false
-    for (const [, value] of Object.entries(candidate.tasks)) {
-      if (typeof value !== 'string') return false
-    }
-  }
-
-  if (candidate.features !== undefined) {
-    if (typeof candidate.features !== 'object') return false
-    for (const [, value] of Object.entries(candidate.features)) {
-      if (typeof value !== 'object') return false
-    }
-  }
-
-  return true
-}
-
-// Add this helper function to strip comments
-function stripJsonComments(jsonString: string): string {
-  // Remove single line comments (// ...)
-  return jsonString.replace(/\/\/.*$/gm, '')
-}
-
+/**
+ * Main execution function for the Dev Container validator action
+ * Coordinates the validation workflow and handles errors
+ * @throws Error if validation fails or if configuration is invalid
+ */
 export async function run(): Promise<void> {
   try {
-    core.debug('Starting devcontainer validation')
-    const extensionsList = core.getInput('required-extensions', {
-      required: true
-    })
-    core.debug(`Required extensions input: ${extensionsList}`)
+    // Initialize validation parameters
+    const {
+      extensionsList,
+      devcontainerPath,
+      shouldValidateTasks,
+      featuresListInput
+    } = getInputParameters()
 
-    const devcontainerPath =
-      core.getInput('devcontainer-path', { required: false }) ||
-      '.devcontainer/devcontainer.json'
-    core.debug(`Using devcontainer path: ${devcontainerPath}`)
+    // Read and parse devcontainer.json
+    const devcontainerContent = await parseDevcontainerFile(devcontainerPath)
 
-    const shouldValidateTasks = core.getInput('validate-tasks') === 'true'
-    core.debug(`Task validation enabled: ${shouldValidateTasks}`)
-
-    try {
-      await fs.promises.access(devcontainerPath)
-      core.debug('Successfully located devcontainer.json file')
-    } catch {
-      throw new Error(`devcontainer.json not found at ${devcontainerPath}`)
-    }
-
-    const fileContent = await fs.promises.readFile(devcontainerPath, 'utf8')
-    core.debug('Successfully read devcontainer.json content')
-
-    let parsedContent: unknown
-    try {
-      const cleanJson = stripJsonComments(fileContent)
-      core.debug('Stripped comments from JSON content')
-      parsedContent = JSON.parse(cleanJson) as unknown
-      core.debug('Successfully parsed JSON content')
-    } catch (error) {
-      throw new Error(
-        `Invalid JSON in devcontainer.json: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      )
-    }
-
-    // Strengthen type checking before using parsed content
-    if (!isDevcontainerContent(parsedContent)) {
-      throw new Error('Invalid devcontainer.json structure')
-    }
-
-    // Now parsedContent is safely typed as DevcontainerContent
-    const devcontainerContent: DevcontainerContent = parsedContent
-
-    const requiredExtensions = extensionsList.split(',').map(ext => ext.trim())
-    const missingExtensions = validateExtensions(
+    // Perform validations
+    validateConfiguration(
       devcontainerContent,
-      requiredExtensions
+      extensionsList,
+      shouldValidateTasks,
+      featuresListInput
     )
-
-    if (missingExtensions.length > 0) {
-      throw new Error(
-        `Missing required extensions: ${missingExtensions.join(', ')}`
-      )
-    }
-
-    if (shouldValidateTasks) {
-      const tasksError = validateTasks(devcontainerContent)
-      if (tasksError) {
-        throw new Error(tasksError)
-      }
-    }
-
-    const featuresListInput = core.getInput('required-features', {
-      required: false
-    })
-    if (featuresListInput) {
-      const requiredFeatures = featuresListInput
-        .split(',')
-        .map(feature => feature.trim())
-      const missingFeatures = validateFeatures(
-        devcontainerContent,
-        requiredFeatures
-      )
-
-      if (missingFeatures.length > 0) {
-        throw new Error(
-          `Missing required features: ${missingFeatures.join(', ')}`
-        )
-      }
-    }
 
     core.info('All validations passed successfully')
   } catch (error: unknown) {
-    core.debug('An error occurred during validation')
-    let errorMessage: string
-    if (error instanceof Error) {
-      errorMessage = error.message
-    } else if (typeof error === 'string') {
-      errorMessage = error
-    } else {
-      errorMessage = 'An unknown error occurred'
-    }
-    core.setFailed(errorMessage)
+    handleValidationError(error)
   }
+}
+
+/**
+ * Retrieves and validates all GitHub Action input parameters
+ * @returns Object containing validated input parameters
+ * @throws Never - Invalid inputs are handled by @actions/core
+ */
+function getInputParameters(): {
+  extensionsList: string
+  devcontainerPath: string
+  shouldValidateTasks: boolean
+  featuresListInput: string
+} {
+  const extensionsList = core.getInput('required-extensions', {
+    required: true
+  })
+  const devcontainerPath =
+    core.getInput('devcontainer-path') || '.devcontainer/devcontainer.json'
+  const shouldValidateTasks = core.getInput('validate-tasks') === 'true'
+  const featuresListInput = core.getInput('required-features')
+
+  core.debug(`Configuration:
+    - Required extensions: ${extensionsList}
+    - Devcontainer path: ${devcontainerPath}
+    - Validate tasks: ${shouldValidateTasks}
+    - Required features: ${featuresListInput || 'none'}
+  `)
+
+  return {
+    extensionsList,
+    devcontainerPath,
+    shouldValidateTasks,
+    featuresListInput
+  }
+}
+
+/**
+ * Parses and validates the devcontainer.json file
+ * @param devcontainerPath - Path to the devcontainer.json file
+ * @returns Parsed and validated DevcontainerContent object
+ * @throws Error if file is not found, invalid JSON, or invalid structure
+ */
+async function parseDevcontainerFile(
+  devcontainerPath: string
+): Promise<DevcontainerContent> {
+  try {
+    await fs.promises.access(devcontainerPath)
+    core.debug('Successfully located devcontainer.json file')
+  } catch {
+    throw new Error(`devcontainer.json not found at ${devcontainerPath}`)
+  }
+
+  const fileContent = await fs.promises.readFile(devcontainerPath, 'utf8')
+  core.debug('Successfully read devcontainer.json content')
+
+  let parsedContent: unknown
+  try {
+    const cleanJson = stripJsonComments(fileContent)
+    core.debug('Stripped comments from JSON content')
+    parsedContent = JSON.parse(cleanJson) as unknown
+    core.debug('Successfully parsed JSON content')
+  } catch (error) {
+    throw new Error(
+      `Invalid JSON in devcontainer.json: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+  }
+
+  if (!isDevcontainerContent(parsedContent)) {
+    throw new Error('Invalid devcontainer.json structure')
+  }
+
+  return parsedContent
+}
+
+/**
+ * Performs all validation checks on the devcontainer configuration
+ * @param devcontainerContent - The parsed devcontainer configuration
+ * @param extensionsList - Comma-separated list of required extensions
+ * @param shouldValidateTasks - Whether to validate required tasks
+ * @param featuresListInput - Optional comma-separated list of required features
+ * @throws Error if any validation check fails
+ */
+function validateConfiguration(
+  devcontainerContent: DevcontainerContent,
+  extensionsList: string,
+  shouldValidateTasks: boolean,
+  featuresListInput?: string
+): void {
+  const requiredExtensions = extensionsList.split(',').map(ext => ext.trim())
+  const missingExtensions = validateExtensions(
+    devcontainerContent,
+    requiredExtensions
+  )
+
+  if (missingExtensions.length > 0) {
+    throw new Error(
+      `Missing required extensions: ${missingExtensions.join(', ')}`
+    )
+  }
+
+  if (shouldValidateTasks) {
+    const tasksError = validateTasks(devcontainerContent)
+    if (tasksError) {
+      throw new Error(tasksError)
+    }
+  }
+
+  if (featuresListInput) {
+    const requiredFeatures = featuresListInput
+      .split(',')
+      .map(feature => feature.trim())
+    const missingFeatures = validateFeatures(
+      devcontainerContent,
+      requiredFeatures
+    )
+
+    if (missingFeatures.length > 0) {
+      throw new Error(
+        `Missing required features: ${missingFeatures.join(', ')}`
+      )
+    }
+  }
+}
+
+/**
+ * Handles and formats validation errors for GitHub Actions output
+ * @param error - The error to handle and report
+ */
+function handleValidationError(error: unknown): void {
+  core.debug('An error occurred during validation')
+  let errorMessage: string
+  if (error instanceof Error) {
+    errorMessage = error.message
+  } else if (typeof error === 'string') {
+    errorMessage = error
+  } else {
+    errorMessage = 'An unknown error occurred'
+  }
+  core.setFailed(errorMessage)
 }
 
 export {

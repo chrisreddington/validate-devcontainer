@@ -3457,20 +3457,259 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.validateFeatures = exports.validateTasks = exports.validateExtensions = void 0;
 exports.run = run;
+const core = __importStar(__nccwpck_require__(484));
+const fs = __importStar(__nccwpck_require__(896));
+const validators_1 = __nccwpck_require__(464);
+Object.defineProperty(exports, "validateExtensions", ({ enumerable: true, get: function () { return validators_1.validateExtensions; } }));
+Object.defineProperty(exports, "validateTasks", ({ enumerable: true, get: function () { return validators_1.validateTasks; } }));
+Object.defineProperty(exports, "validateFeatures", ({ enumerable: true, get: function () { return validators_1.validateFeatures; } }));
+const utils_1 = __nccwpck_require__(798);
+/**
+ * Main execution function for the Dev Container validator action
+ * Coordinates the validation workflow and handles errors
+ * @throws Error if validation fails or if configuration is invalid
+ */
+async function run() {
+    try {
+        // Initialize validation parameters
+        const { extensionsList, devcontainerPath, shouldValidateTasks, featuresListInput } = getInputParameters();
+        // Read and parse devcontainer.json
+        const devcontainerContent = await parseDevcontainerFile(devcontainerPath);
+        // Perform validations
+        validateConfiguration(devcontainerContent, extensionsList, shouldValidateTasks, featuresListInput);
+        core.info('All validations passed successfully');
+    }
+    catch (error) {
+        handleValidationError(error);
+    }
+}
+/**
+ * Retrieves and validates all GitHub Action input parameters
+ * @returns Object containing validated input parameters
+ * @throws Never - Invalid inputs are handled by @actions/core
+ */
+function getInputParameters() {
+    const extensionsList = core.getInput('required-extensions', {
+        required: true
+    });
+    const devcontainerPath = core.getInput('devcontainer-path') || '.devcontainer/devcontainer.json';
+    const shouldValidateTasks = core.getInput('validate-tasks') === 'true';
+    const featuresListInput = core.getInput('required-features');
+    core.debug(`Configuration:
+    - Required extensions: ${extensionsList}
+    - Devcontainer path: ${devcontainerPath}
+    - Validate tasks: ${shouldValidateTasks}
+    - Required features: ${featuresListInput || 'none'}
+  `);
+    return {
+        extensionsList,
+        devcontainerPath,
+        shouldValidateTasks,
+        featuresListInput
+    };
+}
+/**
+ * Parses and validates the devcontainer.json file
+ * @param devcontainerPath - Path to the devcontainer.json file
+ * @returns Parsed and validated DevcontainerContent object
+ * @throws Error if file is not found, invalid JSON, or invalid structure
+ */
+async function parseDevcontainerFile(devcontainerPath) {
+    try {
+        await fs.promises.access(devcontainerPath);
+        core.debug('Successfully located devcontainer.json file');
+    }
+    catch {
+        throw new Error(`devcontainer.json not found at ${devcontainerPath}`);
+    }
+    const fileContent = await fs.promises.readFile(devcontainerPath, 'utf8');
+    core.debug('Successfully read devcontainer.json content');
+    let parsedContent;
+    try {
+        const cleanJson = (0, utils_1.stripJsonComments)(fileContent);
+        core.debug('Stripped comments from JSON content');
+        parsedContent = JSON.parse(cleanJson);
+        core.debug('Successfully parsed JSON content');
+    }
+    catch (error) {
+        throw new Error(`Invalid JSON in devcontainer.json: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    if (!(0, utils_1.isDevcontainerContent)(parsedContent)) {
+        throw new Error('Invalid devcontainer.json structure');
+    }
+    return parsedContent;
+}
+/**
+ * Performs all validation checks on the devcontainer configuration
+ * @param devcontainerContent - The parsed devcontainer configuration
+ * @param extensionsList - Comma-separated list of required extensions
+ * @param shouldValidateTasks - Whether to validate required tasks
+ * @param featuresListInput - Optional comma-separated list of required features
+ * @throws Error if any validation check fails
+ */
+function validateConfiguration(devcontainerContent, extensionsList, shouldValidateTasks, featuresListInput) {
+    const requiredExtensions = extensionsList.split(',').map(ext => ext.trim());
+    const missingExtensions = (0, validators_1.validateExtensions)(devcontainerContent, requiredExtensions);
+    if (missingExtensions.length > 0) {
+        throw new Error(`Missing required extensions: ${missingExtensions.join(', ')}`);
+    }
+    if (shouldValidateTasks) {
+        const tasksError = (0, validators_1.validateTasks)(devcontainerContent);
+        if (tasksError) {
+            throw new Error(tasksError);
+        }
+    }
+    if (featuresListInput) {
+        const requiredFeatures = featuresListInput
+            .split(',')
+            .map(feature => feature.trim());
+        const missingFeatures = (0, validators_1.validateFeatures)(devcontainerContent, requiredFeatures);
+        if (missingFeatures.length > 0) {
+            throw new Error(`Missing required features: ${missingFeatures.join(', ')}`);
+        }
+    }
+}
+/**
+ * Handles and formats validation errors for GitHub Actions output
+ * @param error - The error to handle and report
+ */
+function handleValidationError(error) {
+    core.debug('An error occurred during validation');
+    let errorMessage;
+    if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+    else if (typeof error === 'string') {
+        errorMessage = error;
+    }
+    else {
+        errorMessage = 'An unknown error occurred';
+    }
+    core.setFailed(errorMessage);
+}
+
+
+/***/ }),
+
+/***/ 798:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isDevcontainerContent = isDevcontainerContent;
+exports.stripJsonComments = stripJsonComments;
+/**
+ * Type guard to validate the structure of a devcontainer.json file
+ * Ensures the object conforms to the DevcontainerContent interface
+ * @param obj - The object to validate
+ * @returns Boolean indicating if the object is a valid DevcontainerContent
+ * @throws Never - This function only returns boolean
+ */
+function isDevcontainerContent(obj) {
+    // Basic type checks
+    if (typeof obj !== 'object' || obj === null)
+        return false;
+    const candidate = obj;
+    // Validate VS Code customizations structure
+    const hasValidCustomizations = !candidate.customizations ||
+        (typeof candidate.customizations === 'object' &&
+            Array.isArray(candidate.customizations.vscode?.extensions));
+    if (!hasValidCustomizations)
+        return false;
+    // Validate tasks structure
+    const hasValidTasks = !candidate.tasks ||
+        (typeof candidate.tasks === 'object' &&
+            Object.values(candidate.tasks).every(value => typeof value === 'string'));
+    if (!hasValidTasks)
+        return false;
+    // Validate features structure
+    const hasValidFeatures = !candidate.features ||
+        (typeof candidate.features === 'object' &&
+            Object.values(candidate.features).every(value => typeof value === 'object'));
+    if (!hasValidFeatures)
+        return false;
+    return true;
+}
+/**
+ * Sanitizes JSON string by removing JavaScript-style comments
+ * Handles single-line comments only (// style)
+ * @param jsonString - Raw JSON string that may contain comments
+ * @returns Clean JSON string with all comments removed
+ * @throws Never - This function performs string manipulation only
+ */
+function stripJsonComments(jsonString) {
+    return jsonString.replace(/\/\/.*$/gm, '');
+}
+
+
+/***/ }),
+
+/***/ 464:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.validateExtensions = validateExtensions;
 exports.validateTasks = validateTasks;
 exports.validateFeatures = validateFeatures;
 const core = __importStar(__nccwpck_require__(484));
-const fs = __importStar(__nccwpck_require__(896));
+/**
+ * Validates the presence of required VS Code extensions in the devcontainer configuration
+ * @param devcontainerContent - The parsed devcontainer.json content
+ * @param requiredExtensions - Array of extension IDs that must be present
+ * @returns Array of extension IDs that are missing from the configuration
+ */
 function validateExtensions(devcontainerContent, requiredExtensions) {
-    core.debug(`Validating extensions (required input: ${requiredExtensions.join(', ')})`);
+    // Extract configured extensions with fallback to empty array
     const configuredExtensions = devcontainerContent?.customizations?.vscode?.extensions || [];
-    core.debug(`Extensions found in devcontainer: ${configuredExtensions.join(', ')}`);
-    const missingExtensions = requiredExtensions.filter(required => !configuredExtensions.some(configured => configured.toLowerCase() === required.toLowerCase()));
-    core.debug(`Required extensions missing from devcontainer: ${missingExtensions.length > 0 ? missingExtensions.join(', ') : 'none'}`);
+    // Log validation context
+    core.debug(`Validating against required extensions: ${requiredExtensions.join(', ')}`);
+    core.debug(`Found configured extensions: ${configuredExtensions.join(', ')}`);
+    // Perform case-insensitive comparison to find missing extensions
+    const missingExtensions = requiredExtensions.filter(required => {
+        const requiredLower = required.toLowerCase();
+        return !configuredExtensions.some(configured => configured.toLowerCase() === requiredLower);
+    });
+    // Log validation results
+    const resultMessage = missingExtensions.length > 0
+        ? `Missing: ${missingExtensions.join(', ')}`
+        : 'All required extensions present';
+    core.debug(resultMessage);
     return missingExtensions;
 }
+/**
+ * Validates the presence and configuration of required development tasks
+ * Checks for 'build', 'test', and 'run' tasks with proper string commands
+ * @param devcontainerContent - The parsed devcontainer.json content
+ * @returns Error message if validation fails, null if successful
+ */
 function validateTasks(devcontainerContent) {
     core.debug('Validating required tasks (build, test, run)');
     const tasks = devcontainerContent.tasks;
@@ -3486,130 +3725,22 @@ function validateTasks(devcontainerContent) {
     }
     return null;
 }
+/**
+ * Validates the presence of required Dev Container features
+ * @param devcontainerContent - The parsed devcontainer.json content
+ * @param requiredFeatures - Array of feature identifiers that must be present
+ * @returns Array of feature identifiers that are missing from the configuration
+ */
 function validateFeatures(devcontainerContent, requiredFeatures) {
-    core.debug(`Validating features (required input: ${requiredFeatures.join(', ')})`);
     if (!requiredFeatures || requiredFeatures.length === 0) {
         core.debug('No features specified in required-features input');
         return [];
     }
+    core.debug(`Validating features (required input: ${requiredFeatures.join(', ')})`);
     const configuredFeatures = devcontainerContent.features || {};
     core.debug(`Features found in devcontainer: ${Object.keys(configuredFeatures).join(', ')}`);
     const missingFeatures = requiredFeatures.filter(required => !(required in configuredFeatures));
     return missingFeatures;
-}
-// Add this type guard function before the run() function
-function isDevcontainerContent(obj) {
-    if (typeof obj !== 'object' || obj === null)
-        return false;
-    const candidate = obj;
-    if (candidate.customizations !== undefined) {
-        if (typeof candidate.customizations !== 'object' ||
-            !candidate.customizations.vscode?.extensions) {
-            return false;
-        }
-        if (!Array.isArray(candidate.customizations.vscode.extensions)) {
-            return false;
-        }
-    }
-    if (candidate.tasks !== undefined) {
-        if (typeof candidate.tasks !== 'object')
-            return false;
-        for (const [, value] of Object.entries(candidate.tasks)) {
-            if (typeof value !== 'string')
-                return false;
-        }
-    }
-    if (candidate.features !== undefined) {
-        if (typeof candidate.features !== 'object')
-            return false;
-        for (const [, value] of Object.entries(candidate.features)) {
-            if (typeof value !== 'object')
-                return false;
-        }
-    }
-    return true;
-}
-// Add this helper function to strip comments
-function stripJsonComments(jsonString) {
-    // Remove single line comments (// ...)
-    return jsonString.replace(/\/\/.*$/gm, '');
-}
-async function run() {
-    try {
-        core.debug('Starting devcontainer validation');
-        const extensionsList = core.getInput('required-extensions', {
-            required: true
-        });
-        core.debug(`Required extensions input: ${extensionsList}`);
-        const devcontainerPath = core.getInput('devcontainer-path', { required: false }) ||
-            '.devcontainer/devcontainer.json';
-        core.debug(`Using devcontainer path: ${devcontainerPath}`);
-        const shouldValidateTasks = core.getInput('validate-tasks') === 'true';
-        core.debug(`Task validation enabled: ${shouldValidateTasks}`);
-        try {
-            await fs.promises.access(devcontainerPath);
-            core.debug('Successfully located devcontainer.json file');
-        }
-        catch {
-            throw new Error(`devcontainer.json not found at ${devcontainerPath}`);
-        }
-        const fileContent = await fs.promises.readFile(devcontainerPath, 'utf8');
-        core.debug('Successfully read devcontainer.json content');
-        let parsedContent;
-        try {
-            const cleanJson = stripJsonComments(fileContent);
-            core.debug('Stripped comments from JSON content');
-            parsedContent = JSON.parse(cleanJson);
-            core.debug('Successfully parsed JSON content');
-        }
-        catch (error) {
-            throw new Error(`Invalid JSON in devcontainer.json: ${error instanceof Error ? error.message : String(error)}`);
-        }
-        // Strengthen type checking before using parsed content
-        if (!isDevcontainerContent(parsedContent)) {
-            throw new Error('Invalid devcontainer.json structure');
-        }
-        // Now parsedContent is safely typed as DevcontainerContent
-        const devcontainerContent = parsedContent;
-        const requiredExtensions = extensionsList.split(',').map(ext => ext.trim());
-        const missingExtensions = validateExtensions(devcontainerContent, requiredExtensions);
-        if (missingExtensions.length > 0) {
-            throw new Error(`Missing required extensions: ${missingExtensions.join(', ')}`);
-        }
-        if (shouldValidateTasks) {
-            const tasksError = validateTasks(devcontainerContent);
-            if (tasksError) {
-                throw new Error(tasksError);
-            }
-        }
-        const featuresListInput = core.getInput('required-features', {
-            required: false
-        });
-        if (featuresListInput) {
-            const requiredFeatures = featuresListInput
-                .split(',')
-                .map(feature => feature.trim());
-            const missingFeatures = validateFeatures(devcontainerContent, requiredFeatures);
-            if (missingFeatures.length > 0) {
-                throw new Error(`Missing required features: ${missingFeatures.join(', ')}`);
-            }
-        }
-        core.info('All validations passed successfully');
-    }
-    catch (error) {
-        core.debug('An error occurred during validation');
-        let errorMessage;
-        if (error instanceof Error) {
-            errorMessage = error.message;
-        }
-        else if (typeof error === 'string') {
-            errorMessage = error;
-        }
-        else {
-            errorMessage = 'An unknown error occurred';
-        }
-        core.setFailed(errorMessage);
-    }
 }
 
 
