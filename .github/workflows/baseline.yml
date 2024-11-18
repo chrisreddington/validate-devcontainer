@@ -15,4 +15,6 @@ jobs:
     name: Validate Baseline Configuration
     uses: chrisreddington/reusable-workflows/.github/workflows/baseline-validator.yml@main
     with:
-      required-features: "ghcr.io/devcontainers/features/github-cli:1, ghcr.io/devcontainers-contrib/features/prettier:1"
+      required-features:
+        'ghcr.io/devcontainers/features/github-cli:1,
+        ghcr.io/devcontainers-contrib/features/prettier:1'
