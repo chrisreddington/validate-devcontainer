@@ -179,4 +179,45 @@ describe('run', () => {
       expect.stringContaining('Missing or invalid required tasks')
     )
   })
+
+  test('should skip feature validation when required-features input is empty', async () => {
+    const content = {
+      customizations: {
+        vscode: {
+          extensions: ['ext1']
+        }
+      }
+    }
+
+    jest.spyOn(core, 'getInput').mockImplementation(name => {
+      if (name === 'required-extensions') return 'ext1'
+      if (name === 'required-features') return ''
+      return ''
+    })
+    ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
+    ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify(content)
+    )
+
+    await run()
+    expect(core.setFailed).not.toHaveBeenCalled()
+  })
+
+  test('should handle unknown errors correctly', async () => {
+    // Create an object that matches Error interface but isn't an Error instance
+    const errorLike = {
+      name: 'CustomError',
+      message: 'Custom error message',
+      toString(): string {
+        return this.message
+      }
+    } as Error
+
+    jest.spyOn(core, 'getInput').mockImplementation(() => {
+      throw errorLike
+    })
+
+    await run()
+    expect(core.setFailed).toHaveBeenCalledWith('An unknown error occurred')
+  })
 })
