@@ -220,4 +220,16 @@ describe('run', () => {
     await run()
     expect(core.setFailed).toHaveBeenCalledWith('An unknown error occurred')
   })
+
+  test('should handle string errors correctly', async () => {
+    jest.spyOn(core, 'getInput').mockReturnValue('ext1')
+    ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
+    ;(fs.promises.readFile as jest.Mock).mockRejectedValue(
+      'String error message'
+    )
+
+    await run()
+
+    expect(core.setFailed).toHaveBeenCalledWith('String error message')
+  })
 })
