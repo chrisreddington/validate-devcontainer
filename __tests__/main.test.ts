@@ -52,5 +52,131 @@ describe('run', () => {
     expect(core.setFailed).not.toHaveBeenCalled()
   })
 
-  // Add more integration tests as needed
+  test('should throw error when devcontainer.json is not found', async () => {
+    jest.spyOn(core, 'getInput').mockImplementation(name => {
+      if (name === 'required-extensions') return 'ext1'
+      return ''
+    })
+    ;(fs.promises.access as jest.Mock).mockRejectedValue(
+      new Error('File not found')
+    )
+
+    await run()
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('devcontainer.json not found')
+    )
+  })
+
+  test('should throw error when JSON is invalid', async () => {
+    jest.spyOn(core, 'getInput').mockReturnValue('ext1')
+    ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
+    ;(fs.promises.readFile as jest.Mock).mockResolvedValue('invalid json')
+
+    await run()
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid JSON')
+    )
+  })
+
+  test('should throw error when devcontainer structure is invalid', async () => {
+    const invalidContent = {
+      customizations: {
+        vscode: {
+          extensions: 'not-an-array'
+        }
+      }
+    }
+
+    jest.spyOn(core, 'getInput').mockReturnValue('ext1')
+    ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
+    ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify(invalidContent)
+    )
+
+    await run()
+    expect(core.setFailed).toHaveBeenCalledWith(
+      'Invalid devcontainer.json structure'
+    )
+  })
+
+  test('should throw error when required extensions are missing', async () => {
+    const content = {
+      customizations: {
+        vscode: {
+          extensions: ['ext1']
+        }
+      }
+    }
+
+    jest.spyOn(core, 'getInput').mockImplementation(name => {
+      if (name === 'required-extensions') return 'ext1,ext2'
+      return ''
+    })
+    ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
+    ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify(content)
+    )
+
+    await run()
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('Missing required extensions')
+    )
+  })
+
+  test('should validate features when required-features input is provided', async () => {
+    const content = {
+      customizations: {
+        vscode: {
+          extensions: ['ext1']
+        }
+      },
+      features: {
+        feature1: {}
+      }
+    }
+
+    jest.spyOn(core, 'getInput').mockImplementation(name => {
+      if (name === 'required-extensions') return 'ext1'
+      if (name === 'required-features') return 'feature1,feature2'
+      return ''
+    })
+    ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
+    ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify(content)
+    )
+
+    await run()
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('Missing required features')
+    )
+  })
+
+  test('should handle task validation when enabled', async () => {
+    const content = {
+      customizations: {
+        vscode: {
+          extensions: ['ext1']
+        }
+      },
+      tasks: {
+        build: 'npm build'
+        // missing test and run tasks
+      }
+    }
+
+    jest.spyOn(core, 'getInput').mockImplementation(name => {
+      if (name === 'required-extensions') return 'ext1'
+      if (name === 'validate-tasks') return 'true'
+      return ''
+    })
+    ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
+    ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify(content)
+    )
+
+    await run()
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('Missing or invalid required tasks')
+    )
+  })
 })
