@@ -1,134 +1,12 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
-
-interface VSCodeCustomizations {
-  vscode: {
-    extensions: string[]
-  }
-}
-
-interface DevcontainerContent {
-  customizations?: VSCodeCustomizations
-  tasks?: {
-    [key: string]: string
-  }
-  features?: {
-    [key: string]: object
-  }
-}
-
-function validateExtensions(
-  devcontainerContent: DevcontainerContent,
-  requiredExtensions: string[]
-): string[] {
-  core.debug(
-    `Validating extensions (required input: ${requiredExtensions.join(', ')})`
-  )
-  const configuredExtensions =
-    devcontainerContent?.customizations?.vscode?.extensions || []
-  core.debug(
-    `Extensions found in devcontainer: ${configuredExtensions.join(', ')}`
-  )
-  const missingExtensions = requiredExtensions.filter(
-    required =>
-      !configuredExtensions.some(
-        configured => configured.toLowerCase() === required.toLowerCase()
-      )
-  )
-  core.debug(
-    `Required extensions missing from devcontainer: ${
-      missingExtensions.length > 0 ? missingExtensions.join(', ') : 'none'
-    }`
-  )
-  return missingExtensions
-}
-
-function validateTasks(
-  devcontainerContent: DevcontainerContent
-): string | null {
-  core.debug('Validating required tasks (build, test, run)')
-  const tasks = devcontainerContent.tasks
-  if (!tasks) {
-    core.debug('No tasks section found in devcontainer')
-    return "'tasks' property is missing"
-  }
-
-  core.debug(
-    `Tasks configured in devcontainer: ${Object.keys(tasks).join(', ')}`
-  )
-  const requiredTasks = ['build', 'test', 'run']
-  const missingTasks = requiredTasks.filter(
-    task => !tasks[task] || typeof tasks[task] !== 'string'
-  )
-
-  if (missingTasks.length > 0) {
-    return `Missing or invalid required tasks: ${missingTasks.join(', ')}`
-  }
-
-  return null
-}
-
-function validateFeatures(
-  devcontainerContent: DevcontainerContent,
-  requiredFeatures: string[]
-): string[] {
-  core.debug(
-    `Validating features (required input: ${requiredFeatures.join(', ')})`
-  )
-  if (!requiredFeatures || requiredFeatures.length === 0) {
-    core.debug('No features specified in required-features input')
-    return []
-  }
-  const configuredFeatures = devcontainerContent.features || {}
-  core.debug(
-    `Features found in devcontainer: ${Object.keys(configuredFeatures).join(', ')}`
-  )
-  const missingFeatures = requiredFeatures.filter(
-    required => !(required in configuredFeatures)
-  )
-  return missingFeatures
-}
-
-// Add this type guard function before the run() function
-function isDevcontainerContent(obj: unknown): obj is DevcontainerContent {
-  if (typeof obj !== 'object' || obj === null) return false
-
-  const candidate = obj as Partial<DevcontainerContent>
-
-  if (candidate.customizations !== undefined) {
-    if (
-      typeof candidate.customizations !== 'object' ||
-      !candidate.customizations.vscode?.extensions
-    ) {
-      return false
-    }
-    if (!Array.isArray(candidate.customizations.vscode.extensions)) {
-      return false
-    }
-  }
-
-  if (candidate.tasks !== undefined) {
-    if (typeof candidate.tasks !== 'object') return false
-    for (const [, value] of Object.entries(candidate.tasks)) {
-      if (typeof value !== 'string') return false
-    }
-  }
-
-  if (candidate.features !== undefined) {
-    if (typeof candidate.features !== 'object') return false
-    for (const [, value] of Object.entries(candidate.features)) {
-      if (typeof value !== 'object') return false
-    }
-  }
-
-  return true
-}
-
-// Add this helper function to strip comments
-function stripJsonComments(jsonString: string): string {
-  // Remove single line comments (// ...)
-  return jsonString.replace(/\/\/.*$/gm, '')
-}
+import {
+  validateExtensions,
+  validateTasks,
+  validateFeatures
+} from './validators'
+import { isDevcontainerContent, stripJsonComments } from './utils'
+import { DevcontainerContent, VSCodeCustomizations } from './types'
 
 export async function run(): Promise<void> {
   try {
@@ -170,7 +48,6 @@ export async function run(): Promise<void> {
       )
     }
 
-    // Strengthen type checking before using parsed content
     if (!isDevcontainerContent(parsedContent)) {
       throw new Error('Invalid devcontainer.json structure')
     }
