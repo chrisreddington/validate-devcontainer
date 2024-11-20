@@ -3,6 +3,9 @@ description:
   'Validates that required VS Code extensions are configured in
   devcontainer.json'
 author: 'Chris Reddington'
+branding:
+  icon: 'check-square'
+  color: 'green'
 
 inputs:
   required-extensions:
