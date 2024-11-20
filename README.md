@@ -1,14 +1,15 @@
-# Dev Container Validator
+# Validate Dev Container Configuration
 
 [![GitHub Super-Linter](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/linter.yml/badge.svg)](https://github.com/chrisreddington/validate-devcontainer)
 ![CI](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/ci.yml/badge.svg)
 [![Check dist/](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/check-dist.yml/badge.svg)](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/check-dist.yml)
 [![CodeQL](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/codeql-analysis.yml)
 [![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
+[![Validate Repository Configuration](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/baseline.yml/badge.svg)](https://github.com/chrisreddington/validate-devcontainer/actions/workflows/baseline.yml)
 
-A GitHub Action to validate Dev Container configuration. This action checks
-required Visual Studio Code extensions and optionally validates task
-configuration in devcontainer.json files.
+A GitHub Action to validate Dev Container configuration. This action can check
+for required Visual Studio Code extensions, validate task configuration and
+check for required features in devcontainer.json files.
 
 ## Features
 
@@ -26,7 +27,7 @@ Steps:
   - uses: actions/checkout@v4
 
   - name: Validate Dev Container
-    uses: chrisreddington/validate-devcontainer@v1
+    uses: chrisreddington/validate-devcontainer@v0.0.1
     with:
       # Required Visual Studio Code extensions (comma-separated)
       required-extensions: 'GitHub.codespaces,GitHub.vscode-github-actions'
