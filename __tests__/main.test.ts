@@ -1,17 +1,28 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
 import { run } from '../src/main'
+import {
+  vi,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  type MockInstance
+} from 'vitest'
 
-jest.mock('@actions/core')
-jest.mock('fs', () => ({
+vi.mock('@actions/core')
+vi.mock('fs', () => ({
   promises: {
-    access: jest.fn(),
-    readFile: jest.fn()
+    access: vi.fn(),
+    readFile: vi.fn()
   },
   constants: {
     O_RDONLY: 0
   }
 }))
+
+// Mock types
+let mockGetInput: MockInstance<typeof core.getInput>
 
 /**
  * Test suite for the GitHub Action's main functionality.
@@ -23,7 +34,9 @@ jest.mock('fs', () => ({
  */
 describe('run', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
+    mockGetInput = vi.spyOn(core, 'getInput')
+    vi.spyOn(core, 'setFailed').mockImplementation(() => {})
   })
 
   /**
@@ -45,7 +58,7 @@ describe('run', () => {
       }
 
       // Mock inputs and file operations
-      jest.spyOn(core, 'getInput').mockImplementation(name => {
+      mockGetInput.mockImplementation(name => {
         switch (name) {
           case 'required-extensions':
             return 'required-ext'
@@ -55,8 +68,8 @@ describe('run', () => {
             return ''
         }
       })
-      ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
-      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue(
         JSON.stringify(mockContent)
       )
 
@@ -70,11 +83,11 @@ describe('run', () => {
    */
   describe('file handling errors', () => {
     test('should throw error when devcontainer.json is not found', async () => {
-      jest.spyOn(core, 'getInput').mockImplementation(name => {
+      mockGetInput.mockImplementation(name => {
         if (name === 'required-extensions') return 'ext1'
         return ''
       })
-      ;(fs.promises.access as jest.Mock).mockRejectedValue(
+      vi.spyOn(fs.promises, 'access').mockRejectedValue(
         new Error('File not found')
       )
 
@@ -85,9 +98,9 @@ describe('run', () => {
     })
 
     test('should throw error when JSON is invalid', async () => {
-      jest.spyOn(core, 'getInput').mockReturnValue('ext1')
-      ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
-      ;(fs.promises.readFile as jest.Mock).mockResolvedValue('invalid json')
+      mockGetInput.mockReturnValue('ext1')
+      vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue('invalid json')
 
       await run()
       expect(core.setFailed).toHaveBeenCalledWith(
@@ -109,9 +122,9 @@ describe('run', () => {
         }
       }
 
-      jest.spyOn(core, 'getInput').mockReturnValue('ext1')
-      ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
-      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      mockGetInput.mockReturnValue('ext1')
+      vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue(
         JSON.stringify(invalidContent)
       )
 
@@ -130,12 +143,12 @@ describe('run', () => {
         }
       }
 
-      jest.spyOn(core, 'getInput').mockImplementation(name => {
+      mockGetInput.mockImplementation(name => {
         if (name === 'required-extensions') return 'ext1,ext2'
         return ''
       })
-      ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
-      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue(
         JSON.stringify(content)
       )
 
@@ -162,13 +175,13 @@ describe('run', () => {
         }
       }
 
-      jest.spyOn(core, 'getInput').mockImplementation(name => {
+      mockGetInput.mockImplementation(name => {
         if (name === 'required-extensions') return 'ext1'
         if (name === 'required-features') return 'feature1,feature2'
         return ''
       })
-      ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
-      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue(
         JSON.stringify(content)
       )
 
@@ -187,13 +200,13 @@ describe('run', () => {
         }
       }
 
-      jest.spyOn(core, 'getInput').mockImplementation(name => {
+      mockGetInput.mockImplementation(name => {
         if (name === 'required-extensions') return 'ext1'
         if (name === 'required-features') return ''
         return ''
       })
-      ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
-      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue(
         JSON.stringify(content)
       )
 
@@ -219,13 +232,13 @@ describe('run', () => {
         }
       }
 
-      jest.spyOn(core, 'getInput').mockImplementation(name => {
+      mockGetInput.mockImplementation(name => {
         if (name === 'required-extensions') return 'ext1'
         if (name === 'validate-tasks') return 'true'
         return ''
       })
-      ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
-      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(
+      vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue(
         JSON.stringify(content)
       )
 
@@ -250,7 +263,7 @@ describe('run', () => {
         }
       } as Error
 
-      jest.spyOn(core, 'getInput').mockImplementation(() => {
+      mockGetInput.mockImplementation(() => {
         throw errorLike
       })
 
@@ -259,9 +272,9 @@ describe('run', () => {
     })
 
     test('should handle string errors correctly', async () => {
-      jest.spyOn(core, 'getInput').mockReturnValue('ext1')
-      ;(fs.promises.access as jest.Mock).mockResolvedValue(undefined)
-      ;(fs.promises.readFile as jest.Mock).mockRejectedValue(
+      mockGetInput.mockReturnValue('ext1')
+      vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'readFile').mockRejectedValue(
         'String error message'
       )
 
