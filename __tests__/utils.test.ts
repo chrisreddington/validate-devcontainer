@@ -1,3 +1,4 @@
+import { describe, test, expect } from 'vitest'
 import { isDevcontainerContent, stripJsonComments } from '../src/utils'
 
 /**

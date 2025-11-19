@@ -1,16 +1,25 @@
-import { run } from '../src/main'
+/**
+ * Unit tests for the action's entrypoint (src/index.ts)
+ */
 
-jest.mock('../src/main', () => ({
-  run: jest.fn()
-}))
+import * as main from '../src/main'
+import { vi, describe, it, expect } from 'vitest'
 
 /**
- * Test suite for the GitHub Action's entry point.
- * Validates that the action is properly initialized and the main run function is called.
+ * Mock implementation of the main run function
+ */
+const mockRun = vi.spyOn(main, 'run').mockImplementation()
+
+/**
+ * Test suite for the action's entry point
  */
 describe('index', () => {
+  /**
+   * Test case: Verifies that the run function is called when the index is imported
+   */
   it('calls run when imported', async () => {
     await import('../src/index')
-    expect(run).toHaveBeenCalled()
+
+    expect(mockRun).toHaveBeenCalled()
   })
 })
