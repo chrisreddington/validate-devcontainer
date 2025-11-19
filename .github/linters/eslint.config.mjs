@@ -28,7 +28,7 @@ export default [
       'coverage/**',
       'test/**',
       '**/.github/linters/**',
-      'vitest.config.ts'
+      'vitest.config.mts'
     ]
   },
   ...compat.extends(
