@@ -48,3 +48,5 @@ jobs:
           VALIDATE_JSCPD: false
           VALIDATE_TYPESCRIPT_STANDARD: false
           VALIDATE_TYPESCRIPT_ES: false # handled in CI, due to current lack of support for ESLint 9.
+          VALIDATE_BIOME_FORMAT: false
+          VALIDATE_BIOME_LINT: false
