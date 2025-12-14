@@ -1,4 +1,3 @@
----
 # Checkov configuration file
 # Excludes specific directories from security scanning
 skip-path:
