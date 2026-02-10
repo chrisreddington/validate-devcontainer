@@ -1,4 +1,4 @@
-import { DevcontainerContent } from './types'
+import { DevcontainerContent } from './types.js'
 
 /**
  * Type guard to validate the structure of a devcontainer.json file

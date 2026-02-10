@@ -1,4 +1,4 @@
-import { DevcontainerContent } from '../src/types'
+import { DevcontainerContent } from '../src/types.js'
 
 /**
  * Creates a mock devcontainer configuration for testing purposes.

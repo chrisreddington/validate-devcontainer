@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { isDevcontainerContent, stripJsonComments } from '../src/utils'
+import { isDevcontainerContent, stripJsonComments } from '../src/utils.js'
 
 /**
  * Test suite for utility functions used in devcontainer validation.

@@ -4,9 +4,9 @@ import {
   validateExtensions,
   validateTasks,
   validateFeatures
-} from './validators'
-import { isDevcontainerContent, stripJsonComments } from './utils'
-import { DevcontainerContent, VSCodeCustomizations } from './types'
+} from './validators.js'
+import { isDevcontainerContent, stripJsonComments } from './utils.js'
+import { DevcontainerContent, VSCodeCustomizations } from './types.js'
 
 /**
  * Main execution function for the Dev Container validator action
@@ -181,10 +181,5 @@ function handleValidationError(error: unknown): void {
   core.setFailed(errorMessage)
 }
 
-export {
-  validateExtensions,
-  validateTasks,
-  validateFeatures,
-  DevcontainerContent,
-  VSCodeCustomizations
-}
+export { validateExtensions, validateTasks, validateFeatures }
+export type { DevcontainerContent, VSCodeCustomizations }
