@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
-import { run } from '../src/main'
+import { run } from '../src/main.js'
 import {
   vi,
   describe,

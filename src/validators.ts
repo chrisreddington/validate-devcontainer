@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { DevcontainerContent } from './types'
+import { DevcontainerContent } from './types.js'
 
 /**
  * Validates the presence of required VS Code extensions in the devcontainer configuration

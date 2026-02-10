@@ -28,7 +28,8 @@ export default [
       'coverage/**',
       'test/**',
       '**/.github/linters/**',
-      'vitest.config.mts'
+      'vitest.config.mts',
+      'rollup.config.ts'
     ]
   },
   ...compat.extends(

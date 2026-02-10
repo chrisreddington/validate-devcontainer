@@ -3,8 +3,8 @@ import {
   validateExtensions,
   validateTasks,
   validateFeatures
-} from '../src/validators'
-import { DevcontainerContent } from '../src/types'
+} from '../src/validators.js'
+import { DevcontainerContent } from '../src/types.js'
 
 /**
  * Test suite for devcontainer.json validation functions.
