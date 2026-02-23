@@ -28149,7 +28149,7 @@ async function parseDevcontainerFile(devcontainerPath) {
         debug('Successfully parsed JSON content');
     }
     catch (error) {
-        throw new Error(`Invalid JSON in devcontainer.json: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Invalid JSON in devcontainer.json: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
     if (!isDevcontainerContent(parsedContent)) {
         throw new Error('Invalid devcontainer.json structure');
