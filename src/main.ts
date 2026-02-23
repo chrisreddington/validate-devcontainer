@@ -103,7 +103,8 @@ async function parseDevcontainerFile(
     throw new Error(
       `Invalid JSON in devcontainer.json: ${
         error instanceof Error ? error.message : String(error)
-      }`
+      }`,
+      { cause: error }
     )
   }
 
