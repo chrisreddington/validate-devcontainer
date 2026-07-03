@@ -73,6 +73,6 @@
     "@eslint/eslintrc": {
       "minimatch": "^3.1.5"
     },
-    "undici": ">=6.24.0 <7"
+    "undici": ">=6.27.0 <7"
   }
 }
