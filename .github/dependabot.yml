@@ -34,3 +34,10 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # typescript-eslint's peer dependency currently caps at
+      # typescript ">=4.8.4 <6.1.0", so a major bump to typescript 7.x
+      # breaks dependency resolution for the whole npm-development group.
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
